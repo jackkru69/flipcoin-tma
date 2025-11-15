@@ -271,7 +271,7 @@ onMounted(async () => {
   if (factoryAddress) {
     loadGames();
   }
-  
+
   // Try to load seed phrase from localStorage
   const stored = localStorage.getItem('flipcoin_seed');
   if (stored) {
@@ -281,7 +281,7 @@ onMounted(async () => {
       console.error('Failed to load seed phrase:', e);
     }
   }
-  
+
   // Generate new seed phrase if not exists
   if (!userSeedPhrase.value) {
     userSeedPhrase.value = await generateSeedPhrase();
@@ -549,7 +549,7 @@ async function confirmOpenBid() {
       // and the secret was generated as hash(coinSide + signature),
       // we need to try sending with the same signature
       // The contract will validate against the stored secret
-      
+
       // Actually, with seed-based approach, we use the same signature
       // The contract checks hash(HEADS, signature, player) and hash(TAILS, signature, player)
       const signatureTails = getSignatureFromSeed(openBidGameId.value, userSeedPhrase.value);
