@@ -48,7 +48,7 @@ async function fetchFactoryConfig(factoryAddress: string): Promise<FactoryConfig
     waitingForOpenBidSeconds: config.waitingForOpenBidSeconds,
     feeReceiver: config.feeReceiver,
     stopped: config.stopped,
-    lowestBid: BigInt(1_000_000_000), // 1 TON default
+    lowestBid: BigInt(100_000_000), // 0.1 TON default
     highestBid: BigInt(100_000_000_000), // 100 TON default
   };
 }

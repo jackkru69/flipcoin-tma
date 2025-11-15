@@ -18,10 +18,16 @@ export function getSignatureFromSeed(gameId: bigint, seedPhrase: string[]): bigi
   // Join seed phrase into single string
   const seedString = seedPhrase.join(' ');
 
-  // Create message: gameId + seedPhrase
+  // First, hash the seed phrase to get a 256-bit value
+  const seedCell = beginCell()
+    .storeStringTail(seedString)
+    .endCell();
+  const seedHash = seedCell.hash();
+
+  // Then combine gameId with hashed seed phrase
   const message = beginCell()
     .storeUint(gameId, 256)
-    .storeBuffer(Buffer.from(seedString, 'utf-8'))
+    .storeBuffer(seedHash)
     .endCell();
 
   // Use sha256 hash as signature

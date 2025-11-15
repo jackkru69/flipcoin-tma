@@ -4,22 +4,19 @@ import {
   Address,
   Builder,
   beginCell,
+
   TupleReader,
   Dictionary,
   contractAddress,
+  type ContractProvider,
+  type Sender,
+  type Contract,
+  type ContractABI,
+  type ABIType,
+  type ABIGetter,
+  type ABIReceiver,
   TupleBuilder,
-} from '@ton/core';
-
-
-import type {
-  ContractProvider,
-  Sender,
-  Contract,
-  ContractABI,
-  ABIType,
-  ABIGetter,
-  ABIReceiver,
-  DictionaryValue
+  type DictionaryValue
 } from '@ton/core';
 
 export type DataSize = {
@@ -1294,6 +1291,7 @@ export function dictValueParserGameCreatedResponse(): DictionaryValue<GameCreate
 
 export type CreateGameAndOpenBidsMsg = {
   $$type: 'CreateGameAndOpenBidsMsg';
+  bidValue: bigint;
   secret: bigint;
   referrer: Address | null;
   gameIdsToOpen: Dictionary<number, bigint>;
@@ -1304,7 +1302,8 @@ export type CreateGameAndOpenBidsMsg = {
 export function storeCreateGameAndOpenBidsMsg(src: CreateGameAndOpenBidsMsg) {
   return (builder: Builder) => {
     const b_0 = builder;
-    b_0.storeUint(142652678, 32);
+    b_0.storeUint(3220317951, 32);
+    b_0.storeCoins(src.bidValue);
     b_0.storeUint(src.secret, 256);
     b_0.storeAddress(src.referrer);
     b_0.storeDict(src.gameIdsToOpen, Dictionary.Keys.Uint(16), Dictionary.Values.BigUint(256));
@@ -1315,35 +1314,39 @@ export function storeCreateGameAndOpenBidsMsg(src: CreateGameAndOpenBidsMsg) {
 
 export function loadCreateGameAndOpenBidsMsg(slice: Slice) {
   const sc_0 = slice;
-  if (sc_0.loadUint(32) !== 142652678) { throw Error('Invalid prefix'); }
+  if (sc_0.loadUint(32) !== 3220317951) { throw Error('Invalid prefix'); }
+  const _bidValue = sc_0.loadCoins();
   const _secret = sc_0.loadUintBig(256);
   const _referrer = sc_0.loadMaybeAddress();
   const _gameIdsToOpen = Dictionary.load(Dictionary.Keys.Uint(16), Dictionary.Values.BigUint(256), sc_0);
   const _keysToOpen = Dictionary.load(Dictionary.Keys.Uint(16), Dictionary.Values.BigUint(256), sc_0);
   const _count = sc_0.loadUintBig(16);
-  return { $$type: 'CreateGameAndOpenBidsMsg' as const, secret: _secret, referrer: _referrer, gameIdsToOpen: _gameIdsToOpen, keysToOpen: _keysToOpen, count: _count };
+  return { $$type: 'CreateGameAndOpenBidsMsg' as const, bidValue: _bidValue, secret: _secret, referrer: _referrer, gameIdsToOpen: _gameIdsToOpen, keysToOpen: _keysToOpen, count: _count };
 }
 
 export function loadTupleCreateGameAndOpenBidsMsg(source: TupleReader) {
+  const _bidValue = source.readBigNumber();
   const _secret = source.readBigNumber();
   const _referrer = source.readAddressOpt();
   const _gameIdsToOpen = Dictionary.loadDirect(Dictionary.Keys.Uint(16), Dictionary.Values.BigUint(256), source.readCellOpt());
   const _keysToOpen = Dictionary.loadDirect(Dictionary.Keys.Uint(16), Dictionary.Values.BigUint(256), source.readCellOpt());
   const _count = source.readBigNumber();
-  return { $$type: 'CreateGameAndOpenBidsMsg' as const, secret: _secret, referrer: _referrer, gameIdsToOpen: _gameIdsToOpen, keysToOpen: _keysToOpen, count: _count };
+  return { $$type: 'CreateGameAndOpenBidsMsg' as const, bidValue: _bidValue, secret: _secret, referrer: _referrer, gameIdsToOpen: _gameIdsToOpen, keysToOpen: _keysToOpen, count: _count };
 }
 
 export function loadGetterTupleCreateGameAndOpenBidsMsg(source: TupleReader) {
+  const _bidValue = source.readBigNumber();
   const _secret = source.readBigNumber();
   const _referrer = source.readAddressOpt();
   const _gameIdsToOpen = Dictionary.loadDirect(Dictionary.Keys.Uint(16), Dictionary.Values.BigUint(256), source.readCellOpt());
   const _keysToOpen = Dictionary.loadDirect(Dictionary.Keys.Uint(16), Dictionary.Values.BigUint(256), source.readCellOpt());
   const _count = source.readBigNumber();
-  return { $$type: 'CreateGameAndOpenBidsMsg' as const, secret: _secret, referrer: _referrer, gameIdsToOpen: _gameIdsToOpen, keysToOpen: _keysToOpen, count: _count };
+  return { $$type: 'CreateGameAndOpenBidsMsg' as const, bidValue: _bidValue, secret: _secret, referrer: _referrer, gameIdsToOpen: _gameIdsToOpen, keysToOpen: _keysToOpen, count: _count };
 }
 
 export function storeTupleCreateGameAndOpenBidsMsg(source: CreateGameAndOpenBidsMsg) {
   const builder = new TupleBuilder();
+  builder.writeNumber(source.bidValue);
   builder.writeNumber(source.secret);
   builder.writeAddress(source.referrer);
   builder.writeCell(source.gameIdsToOpen.size > 0 ? beginCell().storeDictDirect(source.gameIdsToOpen, Dictionary.Keys.Uint(16), Dictionary.Values.BigUint(256)).endCell() : null);
@@ -2593,6 +2596,7 @@ export function dictValueParserBouncedMessageEvent(): DictionaryValue<BouncedMes
 export type InitGameMsg = {
   $$type: 'InitGameMsg';
   playerOne: Address;
+  bidValue: bigint;
   secret: bigint;
   referrer: Address | null;
   serviceFeeNumerator: bigint;
@@ -2606,14 +2610,15 @@ export type InitGameMsg = {
 export function storeInitGameMsg(src: InitGameMsg) {
   return (builder: Builder) => {
     const b_0 = builder;
-    b_0.storeUint(2759570743, 32);
+    b_0.storeUint(2971395423, 32);
     b_0.storeAddress(src.playerOne);
+    b_0.storeCoins(src.bidValue);
     b_0.storeUint(src.secret, 256);
     b_0.storeAddress(src.referrer);
     b_0.storeUint(src.serviceFeeNumerator, 32);
     b_0.storeUint(src.referrerFeeNumerator, 32);
-    b_0.storeUint(src.waitingForOpenBidSeconds, 32);
     const b_1 = new Builder();
+    b_1.storeUint(src.waitingForOpenBidSeconds, 32);
     b_1.storeCoins(src.lowestBid);
     b_1.storeCoins(src.highestBid);
     b_1.storeAddress(src.feeReceiver);
@@ -2623,22 +2628,24 @@ export function storeInitGameMsg(src: InitGameMsg) {
 
 export function loadInitGameMsg(slice: Slice) {
   const sc_0 = slice;
-  if (sc_0.loadUint(32) !== 2759570743) { throw Error('Invalid prefix'); }
+  if (sc_0.loadUint(32) !== 2971395423) { throw Error('Invalid prefix'); }
   const _playerOne = sc_0.loadAddress();
+  const _bidValue = sc_0.loadCoins();
   const _secret = sc_0.loadUintBig(256);
   const _referrer = sc_0.loadMaybeAddress();
   const _serviceFeeNumerator = sc_0.loadUintBig(32);
   const _referrerFeeNumerator = sc_0.loadUintBig(32);
-  const _waitingForOpenBidSeconds = sc_0.loadUintBig(32);
   const sc_1 = sc_0.loadRef().beginParse();
+  const _waitingForOpenBidSeconds = sc_1.loadUintBig(32);
   const _lowestBid = sc_1.loadCoins();
   const _highestBid = sc_1.loadCoins();
   const _feeReceiver = sc_1.loadAddress();
-  return { $$type: 'InitGameMsg' as const, playerOne: _playerOne, secret: _secret, referrer: _referrer, serviceFeeNumerator: _serviceFeeNumerator, referrerFeeNumerator: _referrerFeeNumerator, waitingForOpenBidSeconds: _waitingForOpenBidSeconds, lowestBid: _lowestBid, highestBid: _highestBid, feeReceiver: _feeReceiver };
+  return { $$type: 'InitGameMsg' as const, playerOne: _playerOne, bidValue: _bidValue, secret: _secret, referrer: _referrer, serviceFeeNumerator: _serviceFeeNumerator, referrerFeeNumerator: _referrerFeeNumerator, waitingForOpenBidSeconds: _waitingForOpenBidSeconds, lowestBid: _lowestBid, highestBid: _highestBid, feeReceiver: _feeReceiver };
 }
 
 export function loadTupleInitGameMsg(source: TupleReader) {
   const _playerOne = source.readAddress();
+  const _bidValue = source.readBigNumber();
   const _secret = source.readBigNumber();
   const _referrer = source.readAddressOpt();
   const _serviceFeeNumerator = source.readBigNumber();
@@ -2647,11 +2654,12 @@ export function loadTupleInitGameMsg(source: TupleReader) {
   const _lowestBid = source.readBigNumber();
   const _highestBid = source.readBigNumber();
   const _feeReceiver = source.readAddress();
-  return { $$type: 'InitGameMsg' as const, playerOne: _playerOne, secret: _secret, referrer: _referrer, serviceFeeNumerator: _serviceFeeNumerator, referrerFeeNumerator: _referrerFeeNumerator, waitingForOpenBidSeconds: _waitingForOpenBidSeconds, lowestBid: _lowestBid, highestBid: _highestBid, feeReceiver: _feeReceiver };
+  return { $$type: 'InitGameMsg' as const, playerOne: _playerOne, bidValue: _bidValue, secret: _secret, referrer: _referrer, serviceFeeNumerator: _serviceFeeNumerator, referrerFeeNumerator: _referrerFeeNumerator, waitingForOpenBidSeconds: _waitingForOpenBidSeconds, lowestBid: _lowestBid, highestBid: _highestBid, feeReceiver: _feeReceiver };
 }
 
 export function loadGetterTupleInitGameMsg(source: TupleReader) {
   const _playerOne = source.readAddress();
+  const _bidValue = source.readBigNumber();
   const _secret = source.readBigNumber();
   const _referrer = source.readAddressOpt();
   const _serviceFeeNumerator = source.readBigNumber();
@@ -2660,12 +2668,13 @@ export function loadGetterTupleInitGameMsg(source: TupleReader) {
   const _lowestBid = source.readBigNumber();
   const _highestBid = source.readBigNumber();
   const _feeReceiver = source.readAddress();
-  return { $$type: 'InitGameMsg' as const, playerOne: _playerOne, secret: _secret, referrer: _referrer, serviceFeeNumerator: _serviceFeeNumerator, referrerFeeNumerator: _referrerFeeNumerator, waitingForOpenBidSeconds: _waitingForOpenBidSeconds, lowestBid: _lowestBid, highestBid: _highestBid, feeReceiver: _feeReceiver };
+  return { $$type: 'InitGameMsg' as const, playerOne: _playerOne, bidValue: _bidValue, secret: _secret, referrer: _referrer, serviceFeeNumerator: _serviceFeeNumerator, referrerFeeNumerator: _referrerFeeNumerator, waitingForOpenBidSeconds: _waitingForOpenBidSeconds, lowestBid: _lowestBid, highestBid: _highestBid, feeReceiver: _feeReceiver };
 }
 
 export function storeTupleInitGameMsg(source: InitGameMsg) {
   const builder = new TupleBuilder();
   builder.writeAddress(source.playerOne);
+  builder.writeNumber(source.bidValue);
   builder.writeNumber(source.secret);
   builder.writeAddress(source.referrer);
   builder.writeNumber(source.serviceFeeNumerator);
@@ -4431,6 +4440,7 @@ export const ReferrerWallet_errors = {
   18666: { message: "Game already initialized" },
   19141: { message: "Bid too small" },
   20709: { message: "Batch too large" },
+  22366: { message: "Insufficient value received" },
   26015: { message: "Wrong game ID" },
   30773: { message: "Cannot cancel" },
   34030: { message: "Only referrer can withdraw" },
@@ -4449,7 +4459,6 @@ export const ReferrerWallet_errors = {
   52336: { message: "Zero address" },
   53296: { message: "Contract not stopped" },
   56615: { message: "Already finishing" },
-  57475: { message: "Insufficient value for deployment" },
   58890: { message: "Invalid timeout" },
   59178: { message: "Game not ready" },
   59839: { message: "Bid too low" },
@@ -4514,6 +4523,7 @@ export const ReferrerWallet_errors_backward = {
   "Game already initialized": 18666,
   "Bid too small": 19141,
   "Batch too large": 20709,
+  "Insufficient value received": 22366,
   "Wrong game ID": 26015,
   "Cannot cancel": 30773,
   "Only referrer can withdraw": 34030,
@@ -4532,7 +4542,6 @@ export const ReferrerWallet_errors_backward = {
   "Zero address": 52336,
   "Contract not stopped": 53296,
   "Already finishing": 56615,
-  "Insufficient value for deployment": 57475,
   "Invalid timeout": 58890,
   "Game not ready": 59178,
   "Bid too low": 59839,
@@ -4564,7 +4573,7 @@ const ReferrerWallet_types: ABIType[] = [
   { "name": "SetWaitingForOpenBidSecondsMsg", "header": 2871718913, "fields": [{ "name": "newValue", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }] },
   { "name": "SetMinReferrerPayoutValueMsg", "header": 429174101, "fields": [{ "name": "newValue", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }] },
   { "name": "GameCreatedResponse", "header": 3945039031, "fields": [{ "name": "gameId", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }, { "name": "gameAddress", "type": { "kind": "simple", "type": "address", "optional": false } }] },
-  { "name": "CreateGameAndOpenBidsMsg", "header": 142652678, "fields": [{ "name": "secret", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }, { "name": "referrer", "type": { "kind": "simple", "type": "address", "optional": true } }, { "name": "gameIdsToOpen", "type": { "kind": "dict", "key": "uint", "keyFormat": 16, "value": "uint", "valueFormat": 256 } }, { "name": "keysToOpen", "type": { "kind": "dict", "key": "uint", "keyFormat": 16, "value": "uint", "valueFormat": 256 } }, { "name": "count", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 16 } }] },
+  { "name": "CreateGameAndOpenBidsMsg", "header": 3220317951, "fields": [{ "name": "bidValue", "type": { "kind": "simple", "type": "uint", "optional": false, "format": "coins" } }, { "name": "secret", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }, { "name": "referrer", "type": { "kind": "simple", "type": "address", "optional": true } }, { "name": "gameIdsToOpen", "type": { "kind": "dict", "key": "uint", "keyFormat": 16, "value": "uint", "valueFormat": 256 } }, { "name": "keysToOpen", "type": { "kind": "dict", "key": "uint", "keyFormat": 16, "value": "uint", "valueFormat": 256 } }, { "name": "count", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 16 } }] },
   { "name": "JoinGameAndOpenBidsMsg", "header": 3735868027, "fields": [{ "name": "gameId", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }, { "name": "bidValue", "type": { "kind": "simple", "type": "uint", "optional": false, "format": "coins" } }, { "name": "secret", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }, { "name": "referrer", "type": { "kind": "simple", "type": "address", "optional": true } }, { "name": "gameIdsToOpen", "type": { "kind": "dict", "key": "uint", "keyFormat": 16, "value": "uint", "valueFormat": 256 } }, { "name": "keysToOpen", "type": { "kind": "dict", "key": "uint", "keyFormat": 16, "value": "uint", "valueFormat": 256 } }, { "name": "count", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 16 } }] },
   { "name": "OpenMultipleGamesMsg", "header": 3766232339, "fields": [{ "name": "gameIdsToOpen", "type": { "kind": "dict", "key": "uint", "keyFormat": 16, "value": "uint", "valueFormat": 256 } }, { "name": "keysToOpen", "type": { "kind": "dict", "key": "uint", "keyFormat": 16, "value": "uint", "valueFormat": 256 } }, { "name": "count", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 16 } }] },
   { "name": "CreateGameMsg", "header": 260122099, "fields": [{ "name": "bidValue", "type": { "kind": "simple", "type": "uint", "optional": false, "format": "coins" } }, { "name": "secret", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }, { "name": "referrer", "type": { "kind": "simple", "type": "address", "optional": true } }] },
@@ -4586,7 +4595,7 @@ const ReferrerWallet_types: ABIType[] = [
   { "name": "SystemStoppedEvent", "header": 2994542628, "fields": [{ "name": "timestamp", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 32 } }] },
   { "name": "SystemResumeEvent", "header": 1976079967, "fields": [{ "name": "timestamp", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 32 } }] },
   { "name": "BouncedMessageEvent", "header": 2167600854, "fields": [{ "name": "op", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 32 } }, { "name": "gameId", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }, { "name": "timestamp", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 32 } }] },
-  { "name": "InitGameMsg", "header": 2759570743, "fields": [{ "name": "playerOne", "type": { "kind": "simple", "type": "address", "optional": false } }, { "name": "secret", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }, { "name": "referrer", "type": { "kind": "simple", "type": "address", "optional": true } }, { "name": "serviceFeeNumerator", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 32 } }, { "name": "referrerFeeNumerator", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 32 } }, { "name": "waitingForOpenBidSeconds", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 32 } }, { "name": "lowestBid", "type": { "kind": "simple", "type": "uint", "optional": false, "format": "coins" } }, { "name": "highestBid", "type": { "kind": "simple", "type": "uint", "optional": false, "format": "coins" } }, { "name": "feeReceiver", "type": { "kind": "simple", "type": "address", "optional": false } }] },
+  { "name": "InitGameMsg", "header": 2971395423, "fields": [{ "name": "playerOne", "type": { "kind": "simple", "type": "address", "optional": false } }, { "name": "bidValue", "type": { "kind": "simple", "type": "uint", "optional": false, "format": "coins" } }, { "name": "secret", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }, { "name": "referrer", "type": { "kind": "simple", "type": "address", "optional": true } }, { "name": "serviceFeeNumerator", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 32 } }, { "name": "referrerFeeNumerator", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 32 } }, { "name": "waitingForOpenBidSeconds", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 32 } }, { "name": "lowestBid", "type": { "kind": "simple", "type": "uint", "optional": false, "format": "coins" } }, { "name": "highestBid", "type": { "kind": "simple", "type": "uint", "optional": false, "format": "coins" } }, { "name": "feeReceiver", "type": { "kind": "simple", "type": "address", "optional": false } }] },
   { "name": "JoinGameMsg", "header": 924533763, "fields": [{ "name": "playerTwo", "type": { "kind": "simple", "type": "address", "optional": false } }, { "name": "secret", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }, { "name": "referrer", "type": { "kind": "simple", "type": "address", "optional": true } }] },
   { "name": "OpenBidMsg", "header": 704611509, "fields": [{ "name": "key", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }] },
   { "name": "OpenMultipleBidsMsg", "header": 4091047635, "fields": [{ "name": "gameIds", "type": { "kind": "dict", "key": "uint", "keyFormat": 16, "value": "uint", "valueFormat": 256 } }, { "name": "keys", "type": { "kind": "dict", "key": "uint", "keyFormat": 16, "value": "uint", "valueFormat": 256 } }, { "name": "count", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 16 } }] },
@@ -4628,7 +4637,7 @@ const ReferrerWallet_opcodes = {
   "SetWaitingForOpenBidSecondsMsg": 2871718913,
   "SetMinReferrerPayoutValueMsg": 429174101,
   "GameCreatedResponse": 3945039031,
-  "CreateGameAndOpenBidsMsg": 142652678,
+  "CreateGameAndOpenBidsMsg": 3220317951,
   "JoinGameAndOpenBidsMsg": 3735868027,
   "OpenMultipleGamesMsg": 3766232339,
   "CreateGameMsg": 260122099,
@@ -4650,7 +4659,7 @@ const ReferrerWallet_opcodes = {
   "SystemStoppedEvent": 2994542628,
   "SystemResumeEvent": 1976079967,
   "BouncedMessageEvent": 2167600854,
-  "InitGameMsg": 2759570743,
+  "InitGameMsg": 2971395423,
   "JoinGameMsg": 924533763,
   "OpenBidMsg": 704611509,
   "OpenMultipleBidsMsg": 4091047635,
@@ -4805,5 +4814,4 @@ export class ReferrerWallet implements Contract {
     const result = source.readBigNumber();
     return result;
   }
-
 }

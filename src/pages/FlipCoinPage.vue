@@ -4,6 +4,9 @@
       <h1>🪙 FlipCoin Game</h1>
       <div class="wallet-info" v-if="wallet">
         <span class="wallet-address">{{ shortenAddress(wallet) }}</span>
+        <button @click="showExportSeedModal = true" class="btn-export" title="Экспорт seed-фразы">
+          🔑
+        </button>
         <button @click="disconnect" class="btn-disconnect">Отключить</button>
       </div>
       <button v-else @click="connect" class="btn-connect">
@@ -68,7 +71,7 @@
                 v-model="newGame.bidValue"
                 type="number"
                 step="0.1"
-                min="1"
+                min="0.1"
                 max="100"
                 placeholder="Введите сумму"
               />
@@ -214,6 +217,55 @@
         </div>
       </div>
     </Teleport>
+
+    <!-- Export Seed Phrase Modal -->
+    <Teleport to="body">
+      <div v-if="showExportSeedModal" class="modal-overlay" @click.self="showExportSeedModal = false">
+        <div class="modal modal-seed">
+          <div class="modal-header">
+            <h3>🔑 Экспорт seed-фразы</h3>
+            <button @click="showExportSeedModal = false" class="btn-close">×</button>
+          </div>
+
+          <div class="modal-body">
+            <div class="warning-box">
+              <div class="warning-icon">⚠️</div>
+              <div class="warning-text">
+                <strong>Важно!</strong> Никогда не делитесь своей seed-фразой с кем-либо.
+                Любой, у кого есть эта фраза, может получить доступ к вашим играм и средствам.
+              </div>
+            </div>
+
+            <div v-if="userSeedPhrase" class="seed-phrase-container">
+              <div class="seed-phrase-grid">
+                <div
+                  v-for="(word, index) in userSeedPhrase"
+                  :key="index"
+                  class="seed-word"
+                >
+                  <span class="word-number">{{ index + 1 }}.</span>
+                  <span class="word-text">{{ word }}</span>
+                </div>
+              </div>
+
+              <button @click="copySeedPhrase" class="btn-copy">
+                {{ seedCopied ? '✓ Скопировано' : '📋 Скопировать фразу' }}
+              </button>
+            </div>
+
+            <div v-else class="no-seed">
+              Seed-фраза не найдена. Пожалуйста, перезагрузите приложение.
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button @click="showExportSeedModal = false" class="btn-primary">
+              Закрыть
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -308,7 +360,7 @@ const showCreateModal = ref(false);
 const creating = ref(false);
 const newGame = ref({
   coinSide: COIN_SIDE_HEADS,
-  bidValue: '1',
+  bidValue: '0.1',
   hasReferrer: false,
   referrerAddress: '',
   key: BigInt(0),
@@ -342,6 +394,10 @@ const showOpenBidModal = ref(false);
 const openingBid = ref(false);
 const openBidGameId = ref<bigint>(BigInt(0));
 
+// Export seed phrase modal
+const showExportSeedModal = ref(false);
+const seedCopied = ref(false);
+
 async function connect() {
   if (tonConnectUI.connected) {
     console.warn('Wallet is already connected');
@@ -352,6 +408,24 @@ async function connect() {
 
 async function disconnect() {
   await tonConnectUI.disconnect();
+}
+
+async function copySeedPhrase() {
+  if (!userSeedPhrase.value) return;
+
+  try {
+    const seedText = userSeedPhrase.value.join(' ');
+    await navigator.clipboard.writeText(seedText);
+    seedCopied.value = true;
+
+    // Reset the copied state after 3 seconds
+    setTimeout(() => {
+      seedCopied.value = false;
+    }, 3000);
+  } catch (error) {
+    console.error('Failed to copy seed phrase:', error);
+    alert('Не удалось скопировать seed-фразу');
+  }
 }
 
 async function handleCreateGame() {
@@ -655,6 +729,20 @@ async function handleCancelGame(gameId: bigint) {
   border-radius: 0.5rem;
 }
 
+.btn-export {
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 1.25rem;
+  background: #ff9800;
+  transition: opacity 0.2s;
+}
+
+.btn-export:hover {
+  opacity: 0.8;
+}
+
 .btn-connect,
 .btn-disconnect {
   padding: 0.75rem 1.5rem;
@@ -885,6 +973,100 @@ async function handleCancelGame(gameId: bigint) {
 
   .actions {
     flex-direction: column;
+  }
+}
+
+/* Export Seed Modal Styles */
+.modal-seed {
+  max-width: 600px;
+}
+
+.warning-box {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: #fff3cd;
+  border: 2px solid #ffc107;
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.warning-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.warning-text {
+  line-height: 1.5;
+}
+
+.warning-text strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #856404;
+}
+
+.seed-phrase-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.seed-phrase-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 0.5rem;
+  border: 2px dashed rgba(0, 0, 0, 0.2);
+}
+
+.seed-word {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: var(--tg-theme-bg-color, #fff);
+  border-radius: 0.25rem;
+  font-family: monospace;
+  font-size: 0.875rem;
+}
+
+.word-number {
+  color: var(--tg-theme-hint-color, #999);
+  min-width: 1.5rem;
+}
+
+.word-text {
+  font-weight: 600;
+  color: var(--tg-theme-text-color, #000);
+}
+
+.btn-copy {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  background: var(--tg-theme-button-color, #2481cc);
+  color: var(--tg-theme-button-text-color, #fff);
+  transition: all 0.2s;
+}
+
+.btn-copy:hover {
+  opacity: 0.8;
+}
+
+.no-seed {
+  padding: 2rem;
+  text-align: center;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+@media (max-width: 640px) {
+  .seed-phrase-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   }
 }
 </style>
