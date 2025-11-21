@@ -1,7 +1,7 @@
 <template>
-  <div class="flip-coin-page">
+  <div class="pod-page">
     <div class="header">
-      <h1>🪙 FlipCoin Game</h1>
+      <h1>🪙 Pod Game</h1>
       <div class="wallet-info" v-if="wallet">
         <span class="wallet-address">{{ shortenAddress(wallet) }}</span>
         <button @click="showExportSeedModal = true" class="btn-export" title="Экспорт seed-фразы">
@@ -289,7 +289,7 @@ import { getHttpEndpoint } from '@orbs-network/ton-access';
 import { useTonConnectUI } from '../tonconnect/useTonConnectUI';
 import { useTonWallet } from '../tonconnect/useTonWallet';
 import GameList from '../components/GameList.vue';
-import { useFlipCoinContract } from '../composables/useFlipCoinContract';
+import { usePODContract } from '../composables/usePODContract';
 import {
   generateSeedPhrase,
   getSignatureFromSeed,
@@ -301,13 +301,13 @@ import {
   createTonConnectSender,
 } from '../utils/contract';
 import { COIN_SIDE_HEADS, COIN_SIDE_TAILS, type GameInfo } from '../types/contract';
-import { FlipCoinGameFactory } from '../wrappers/FlipCoinGameFactory_FlipCoinGameFactory';
-import { Game } from '../wrappers/FlipCoinGameFactory_Game';
+import { PODGameFactory } from '../wrappers/PODGameFactory_PODGameFactory';
+import { Game } from '../wrappers/PODGameFactory_Game';
 
-const factoryAddress = import.meta.env.VITE_FLIPCOIN_FACTORY_ADDRESS;
+const factoryAddress = import.meta.env.VITE_POD_FACTORY_ADDRESS;
 
 if (!factoryAddress) {
-  console.error('Factory address not configured! Add VITE_FLIPCOIN_FACTORY_ADDRESS to .env');
+  console.error('Factory address not configured! Add VITE_POD_FACTORY_ADDRESS to .env');
 }
 
 const {
@@ -321,7 +321,7 @@ const {
   loadGames,
   loadMore,
   refreshGames
-} = useFlipCoinContract(factoryAddress);
+} = usePODContract(factoryAddress);
 
 const { tonConnectUI } = useTonConnectUI();
 const { wallet: tonWallet } = useTonWallet();
@@ -337,7 +337,7 @@ onMounted(async () => {
   }
 
   // Try to load seed phrase from localStorage
-  const stored = localStorage.getItem('flipcoin_seed');
+  const stored = localStorage.getItem('pod_seed');
   if (stored) {
     try {
       userSeedPhrase.value = JSON.parse(stored);
@@ -349,7 +349,7 @@ onMounted(async () => {
   // Generate new seed phrase if not exists
   if (!userSeedPhrase.value) {
     userSeedPhrase.value = await generateSeedPhrase();
-    localStorage.setItem('flipcoin_seed', JSON.stringify(userSeedPhrase.value));
+    localStorage.setItem('pod_seed', JSON.stringify(userSeedPhrase.value));
     console.log('Generated new seed phrase:', userSeedPhrase.value.join(' '));
   }
 });
@@ -469,7 +469,7 @@ async function handleCreateGame() {
     // Get TonClient and open factory contract
     const client = await getTonClient();
     const factory = client.open(
-      FlipCoinGameFactory.fromAddress(Address.parse(factoryAddress))
+      PODGameFactory.fromAddress(Address.parse(factoryAddress))
     );
 
     // Create sender
@@ -546,7 +546,7 @@ async function confirmJoinGame() {
     // Get TonClient and open factory contract
     const client = await getTonClient();
     const factory = client.open(
-      FlipCoinGameFactory.fromAddress(Address.parse(factoryAddress))
+      PODGameFactory.fromAddress(Address.parse(factoryAddress))
     );
 
     // Create sender
@@ -606,7 +606,7 @@ async function confirmOpenBid() {
 
     // Get factory and calculate game address
     const factory = client.open(
-      FlipCoinGameFactory.fromAddress(Address.parse(factoryAddress))
+      PODGameFactory.fromAddress(Address.parse(factoryAddress))
     );
     const gameAddress = await factory.getCalculateGameAddress(openBidGameId.value);
 
@@ -684,7 +684,7 @@ async function handleCancelGame(gameId: bigint) {
 
     // Get factory and calculate game address
     const factory = client.open(
-      FlipCoinGameFactory.fromAddress(Address.parse(factoryAddress))
+      PODGameFactory.fromAddress(Address.parse(factoryAddress))
     );
     const gameAddress = await factory.getCalculateGameAddress(gameId);
 
@@ -719,7 +719,7 @@ async function handleCancelGame(gameId: bigint) {
 </script>
 
 <style scoped>
-.flip-coin-page {
+.pod-page {
   max-width: 1200px;
   margin: 0 auto;
   padding: 1rem;

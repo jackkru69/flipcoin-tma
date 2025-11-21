@@ -3,8 +3,8 @@ import { useQuery, useInfiniteQuery } from '@tanstack/vue-query';
 import { Address, TonClient } from '@ton/ton';
 import type { GameInfo, FactoryConfig, FactoryStats } from '../types/contract';
 import { getHttpEndpoint } from '@orbs-network/ton-access';
-import { FlipCoinGameFactory } from '../wrappers/FlipCoinGameFactory_FlipCoinGameFactory';
-import { Game } from '../wrappers/FlipCoinGameFactory_Game';
+import { PODGameFactory } from '../wrappers/PODGameFactory_PODGameFactory';
+import { Game } from '../wrappers/PODGameFactory_Game';
 
 const BATCH_SIZE = 10;
 
@@ -21,7 +21,7 @@ async function fetchFactoryStats(factoryAddress: string): Promise<FactoryStats> 
   console.log('Fetching factory stats for:', factoryAddress);
   const client = await createTonClient();
   const address = Address.parse(factoryAddress);
-  const factory = client.open(FlipCoinGameFactory.fromAddress(address));
+  const factory = client.open(PODGameFactory.fromAddress(address));
 
   const stats = await factory.getStatistics();
   console.log('Factory stats:', stats);
@@ -39,7 +39,7 @@ async function fetchFactoryStats(factoryAddress: string): Promise<FactoryStats> 
 async function fetchFactoryConfig(factoryAddress: string): Promise<FactoryConfig> {
   const client = await createTonClient();
   const address = Address.parse(factoryAddress);
-  const factory = client.open(FlipCoinGameFactory.fromAddress(address));
+  const factory = client.open(PODGameFactory.fromAddress(address));
 
   const config = await factory.getConfig();
 
@@ -59,7 +59,7 @@ async function fetchFactoryConfig(factoryAddress: string): Promise<FactoryConfig
 async function fetchGameInfo(factoryAddress: string, gameId: number): Promise<GameInfo | null> {
   const client = await createTonClient();
   const address = Address.parse(factoryAddress);
-  const factory = client.open(FlipCoinGameFactory.fromAddress(address));
+  const factory = client.open(PODGameFactory.fromAddress(address));
 
   try {
     // Calculate game address
@@ -125,10 +125,10 @@ interface GamesPageParam {
   totalGames: number;
 }
 
-export function useFlipCoinContract(factoryAddress: string) {
+export function usePODContract(factoryAddress: string) {
   // Query for factory statistics
   const statsQuery = useQuery({
-    queryKey: ['flipcoin', 'stats', factoryAddress],
+    queryKey: ['pod', 'stats', factoryAddress],
     queryFn: () => fetchFactoryStats(factoryAddress),
     staleTime: 30000, // 30 seconds
     refetchInterval: 60000, // Refetch every minute
@@ -136,14 +136,14 @@ export function useFlipCoinContract(factoryAddress: string) {
 
   // Query for factory configuration
   const configQuery = useQuery({
-    queryKey: ['flipcoin', 'config', factoryAddress],
+    queryKey: ['pod', 'config', factoryAddress],
     queryFn: () => fetchFactoryConfig(factoryAddress),
     staleTime: 300000, // 5 minutes (config rarely changes)
   });
 
   // Infinite query for games
   const gamesQuery = useInfiniteQuery({
-    queryKey: ['flipcoin', 'games', factoryAddress],
+    queryKey: ['pod', 'games', factoryAddress],
     queryFn: async ({ pageParam }) => {
       const param = pageParam as GamesPageParam;
       console.log('Fetching games with pageParam:', param);

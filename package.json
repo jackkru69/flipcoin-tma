@@ -1,9 +1,9 @@
 {
-  "name": "flipcoin-tma",
+  "name": "pod-tma",
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "homepage": "https://jackkru69.github.io/flipcoin-tma/",
+  "homepage": "https://jackkru69.github.io/pod-tma/",
   "scripts": {
     "deploy": "gh-pages -d dist",
     "dev": "vite",

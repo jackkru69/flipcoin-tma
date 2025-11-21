@@ -4,7 +4,6 @@ import {
   Address,
   Builder,
   beginCell,
-
   TupleReader,
   Dictionary,
   contractAddress,
@@ -3370,6 +3369,8 @@ export type DetailedStats = {
   totalGamesFinished: bigint;
   totalGamesCancelled: bigint;
   totalGamesDrawn: bigint;
+  totalSecretsOpened: bigint;
+  totalInsufficientBalance: bigint;
 }
 
 export function storeDetailedStats(src: DetailedStats) {
@@ -3380,6 +3381,8 @@ export function storeDetailedStats(src: DetailedStats) {
     b_0.storeUint(src.totalGamesFinished, 64);
     b_0.storeUint(src.totalGamesCancelled, 64);
     b_0.storeUint(src.totalGamesDrawn, 64);
+    b_0.storeUint(src.totalSecretsOpened, 64);
+    b_0.storeUint(src.totalInsufficientBalance, 64);
   };
 }
 
@@ -3390,7 +3393,9 @@ export function loadDetailedStats(slice: Slice) {
   const _totalGamesFinished = sc_0.loadUintBig(64);
   const _totalGamesCancelled = sc_0.loadUintBig(64);
   const _totalGamesDrawn = sc_0.loadUintBig(64);
-  return { $$type: 'DetailedStats' as const, totalGamesCreated: _totalGamesCreated, totalGamesInitialized: _totalGamesInitialized, totalGamesFinished: _totalGamesFinished, totalGamesCancelled: _totalGamesCancelled, totalGamesDrawn: _totalGamesDrawn };
+  const _totalSecretsOpened = sc_0.loadUintBig(64);
+  const _totalInsufficientBalance = sc_0.loadUintBig(64);
+  return { $$type: 'DetailedStats' as const, totalGamesCreated: _totalGamesCreated, totalGamesInitialized: _totalGamesInitialized, totalGamesFinished: _totalGamesFinished, totalGamesCancelled: _totalGamesCancelled, totalGamesDrawn: _totalGamesDrawn, totalSecretsOpened: _totalSecretsOpened, totalInsufficientBalance: _totalInsufficientBalance };
 }
 
 export function loadTupleDetailedStats(source: TupleReader) {
@@ -3399,7 +3404,9 @@ export function loadTupleDetailedStats(source: TupleReader) {
   const _totalGamesFinished = source.readBigNumber();
   const _totalGamesCancelled = source.readBigNumber();
   const _totalGamesDrawn = source.readBigNumber();
-  return { $$type: 'DetailedStats' as const, totalGamesCreated: _totalGamesCreated, totalGamesInitialized: _totalGamesInitialized, totalGamesFinished: _totalGamesFinished, totalGamesCancelled: _totalGamesCancelled, totalGamesDrawn: _totalGamesDrawn };
+  const _totalSecretsOpened = source.readBigNumber();
+  const _totalInsufficientBalance = source.readBigNumber();
+  return { $$type: 'DetailedStats' as const, totalGamesCreated: _totalGamesCreated, totalGamesInitialized: _totalGamesInitialized, totalGamesFinished: _totalGamesFinished, totalGamesCancelled: _totalGamesCancelled, totalGamesDrawn: _totalGamesDrawn, totalSecretsOpened: _totalSecretsOpened, totalInsufficientBalance: _totalInsufficientBalance };
 }
 
 export function loadGetterTupleDetailedStats(source: TupleReader) {
@@ -3408,7 +3415,9 @@ export function loadGetterTupleDetailedStats(source: TupleReader) {
   const _totalGamesFinished = source.readBigNumber();
   const _totalGamesCancelled = source.readBigNumber();
   const _totalGamesDrawn = source.readBigNumber();
-  return { $$type: 'DetailedStats' as const, totalGamesCreated: _totalGamesCreated, totalGamesInitialized: _totalGamesInitialized, totalGamesFinished: _totalGamesFinished, totalGamesCancelled: _totalGamesCancelled, totalGamesDrawn: _totalGamesDrawn };
+  const _totalSecretsOpened = source.readBigNumber();
+  const _totalInsufficientBalance = source.readBigNumber();
+  return { $$type: 'DetailedStats' as const, totalGamesCreated: _totalGamesCreated, totalGamesInitialized: _totalGamesInitialized, totalGamesFinished: _totalGamesFinished, totalGamesCancelled: _totalGamesCancelled, totalGamesDrawn: _totalGamesDrawn, totalSecretsOpened: _totalSecretsOpened, totalInsufficientBalance: _totalInsufficientBalance };
 }
 
 export function storeTupleDetailedStats(source: DetailedStats) {
@@ -3418,6 +3427,8 @@ export function storeTupleDetailedStats(source: DetailedStats) {
   builder.writeNumber(source.totalGamesFinished);
   builder.writeNumber(source.totalGamesCancelled);
   builder.writeNumber(source.totalGamesDrawn);
+  builder.writeNumber(source.totalSecretsOpened);
+  builder.writeNumber(source.totalInsufficientBalance);
   return builder.build();
 }
 
@@ -4222,8 +4233,8 @@ export function dictValueParserReferrerWallet$Data(): DictionaryValue<ReferrerWa
   }
 }
 
-export type FlipCoinGameFactory$Data = {
-  $$type: 'FlipCoinGameFactory$Data';
+export type PODGameFactory$Data = {
+  $$type: 'PODGameFactory$Data';
   stopped: boolean;
   owner: Address;
   serviceFeeNumerator: bigint;
@@ -4233,15 +4244,18 @@ export type FlipCoinGameFactory$Data = {
   waitingForOpenBidSeconds: bigint;
   minReferrerPayoutValue: bigint;
   feeReceiver: Address;
+  salt: bigint;
   totalGamesCreated: bigint;
   totalGamesInitialized: bigint;
   totalGamesFinished: bigint;
   totalGamesCancelled: bigint;
   totalGamesDrawn: bigint;
+  totalSecretsOpened: bigint;
+  totalInsufficientBalance: bigint;
   lastCreatedGameId: bigint;
 }
 
-export function storeFlipCoinGameFactory$Data(src: FlipCoinGameFactory$Data) {
+export function storePODGameFactory$Data(src: PODGameFactory$Data) {
   return (builder: Builder) => {
     const b_0 = builder;
     b_0.storeBit(src.stopped);
@@ -4255,18 +4269,23 @@ export function storeFlipCoinGameFactory$Data(src: FlipCoinGameFactory$Data) {
     const b_2 = new Builder();
     b_2.storeUint(src.minReferrerPayoutValue, 256);
     b_2.storeAddress(src.feeReceiver);
+    b_2.storeUint(src.salt, 64);
     b_2.storeUint(src.totalGamesCreated, 64);
     b_2.storeUint(src.totalGamesInitialized, 64);
     b_2.storeUint(src.totalGamesFinished, 64);
     b_2.storeUint(src.totalGamesCancelled, 64);
     b_2.storeUint(src.totalGamesDrawn, 64);
-    b_2.storeUint(src.lastCreatedGameId, 64);
+    b_2.storeUint(src.totalSecretsOpened, 64);
+    const b_3 = new Builder();
+    b_3.storeUint(src.totalInsufficientBalance, 64);
+    b_3.storeUint(src.lastCreatedGameId, 64);
+    b_2.storeRef(b_3.endCell());
     b_1.storeRef(b_2.endCell());
     b_0.storeRef(b_1.endCell());
   };
 }
 
-export function loadFlipCoinGameFactory$Data(slice: Slice) {
+export function loadPODGameFactory$Data(slice: Slice) {
   const sc_0 = slice;
   const _stopped = sc_0.loadBit();
   const _owner = sc_0.loadAddress();
@@ -4279,16 +4298,20 @@ export function loadFlipCoinGameFactory$Data(slice: Slice) {
   const sc_2 = sc_1.loadRef().beginParse();
   const _minReferrerPayoutValue = sc_2.loadUintBig(256);
   const _feeReceiver = sc_2.loadAddress();
+  const _salt = sc_2.loadUintBig(64);
   const _totalGamesCreated = sc_2.loadUintBig(64);
   const _totalGamesInitialized = sc_2.loadUintBig(64);
   const _totalGamesFinished = sc_2.loadUintBig(64);
   const _totalGamesCancelled = sc_2.loadUintBig(64);
   const _totalGamesDrawn = sc_2.loadUintBig(64);
-  const _lastCreatedGameId = sc_2.loadUintBig(64);
-  return { $$type: 'FlipCoinGameFactory$Data' as const, stopped: _stopped, owner: _owner, serviceFeeNumerator: _serviceFeeNumerator, referrerFeeNumerator: _referrerFeeNumerator, lowestBid: _lowestBid, highestBid: _highestBid, waitingForOpenBidSeconds: _waitingForOpenBidSeconds, minReferrerPayoutValue: _minReferrerPayoutValue, feeReceiver: _feeReceiver, totalGamesCreated: _totalGamesCreated, totalGamesInitialized: _totalGamesInitialized, totalGamesFinished: _totalGamesFinished, totalGamesCancelled: _totalGamesCancelled, totalGamesDrawn: _totalGamesDrawn, lastCreatedGameId: _lastCreatedGameId };
+  const _totalSecretsOpened = sc_2.loadUintBig(64);
+  const sc_3 = sc_2.loadRef().beginParse();
+  const _totalInsufficientBalance = sc_3.loadUintBig(64);
+  const _lastCreatedGameId = sc_3.loadUintBig(64);
+  return { $$type: 'PODGameFactory$Data' as const, stopped: _stopped, owner: _owner, serviceFeeNumerator: _serviceFeeNumerator, referrerFeeNumerator: _referrerFeeNumerator, lowestBid: _lowestBid, highestBid: _highestBid, waitingForOpenBidSeconds: _waitingForOpenBidSeconds, minReferrerPayoutValue: _minReferrerPayoutValue, feeReceiver: _feeReceiver, salt: _salt, totalGamesCreated: _totalGamesCreated, totalGamesInitialized: _totalGamesInitialized, totalGamesFinished: _totalGamesFinished, totalGamesCancelled: _totalGamesCancelled, totalGamesDrawn: _totalGamesDrawn, totalSecretsOpened: _totalSecretsOpened, totalInsufficientBalance: _totalInsufficientBalance, lastCreatedGameId: _lastCreatedGameId };
 }
 
-export function loadTupleFlipCoinGameFactory$Data(source: TupleReader) {
+export function loadTuplePODGameFactory$Data(source: TupleReader) {
   const _stopped = source.readBoolean();
   const _owner = source.readAddress();
   const _serviceFeeNumerator = source.readBigNumber();
@@ -4298,16 +4321,20 @@ export function loadTupleFlipCoinGameFactory$Data(source: TupleReader) {
   const _waitingForOpenBidSeconds = source.readBigNumber();
   const _minReferrerPayoutValue = source.readBigNumber();
   const _feeReceiver = source.readAddress();
+  const _salt = source.readBigNumber();
   const _totalGamesCreated = source.readBigNumber();
   const _totalGamesInitialized = source.readBigNumber();
   const _totalGamesFinished = source.readBigNumber();
   const _totalGamesCancelled = source.readBigNumber();
+  source = source.readTuple();
   const _totalGamesDrawn = source.readBigNumber();
+  const _totalSecretsOpened = source.readBigNumber();
+  const _totalInsufficientBalance = source.readBigNumber();
   const _lastCreatedGameId = source.readBigNumber();
-  return { $$type: 'FlipCoinGameFactory$Data' as const, stopped: _stopped, owner: _owner, serviceFeeNumerator: _serviceFeeNumerator, referrerFeeNumerator: _referrerFeeNumerator, lowestBid: _lowestBid, highestBid: _highestBid, waitingForOpenBidSeconds: _waitingForOpenBidSeconds, minReferrerPayoutValue: _minReferrerPayoutValue, feeReceiver: _feeReceiver, totalGamesCreated: _totalGamesCreated, totalGamesInitialized: _totalGamesInitialized, totalGamesFinished: _totalGamesFinished, totalGamesCancelled: _totalGamesCancelled, totalGamesDrawn: _totalGamesDrawn, lastCreatedGameId: _lastCreatedGameId };
+  return { $$type: 'PODGameFactory$Data' as const, stopped: _stopped, owner: _owner, serviceFeeNumerator: _serviceFeeNumerator, referrerFeeNumerator: _referrerFeeNumerator, lowestBid: _lowestBid, highestBid: _highestBid, waitingForOpenBidSeconds: _waitingForOpenBidSeconds, minReferrerPayoutValue: _minReferrerPayoutValue, feeReceiver: _feeReceiver, salt: _salt, totalGamesCreated: _totalGamesCreated, totalGamesInitialized: _totalGamesInitialized, totalGamesFinished: _totalGamesFinished, totalGamesCancelled: _totalGamesCancelled, totalGamesDrawn: _totalGamesDrawn, totalSecretsOpened: _totalSecretsOpened, totalInsufficientBalance: _totalInsufficientBalance, lastCreatedGameId: _lastCreatedGameId };
 }
 
-export function loadGetterTupleFlipCoinGameFactory$Data(source: TupleReader) {
+export function loadGetterTuplePODGameFactory$Data(source: TupleReader) {
   const _stopped = source.readBoolean();
   const _owner = source.readAddress();
   const _serviceFeeNumerator = source.readBigNumber();
@@ -4317,16 +4344,19 @@ export function loadGetterTupleFlipCoinGameFactory$Data(source: TupleReader) {
   const _waitingForOpenBidSeconds = source.readBigNumber();
   const _minReferrerPayoutValue = source.readBigNumber();
   const _feeReceiver = source.readAddress();
+  const _salt = source.readBigNumber();
   const _totalGamesCreated = source.readBigNumber();
   const _totalGamesInitialized = source.readBigNumber();
   const _totalGamesFinished = source.readBigNumber();
   const _totalGamesCancelled = source.readBigNumber();
   const _totalGamesDrawn = source.readBigNumber();
+  const _totalSecretsOpened = source.readBigNumber();
+  const _totalInsufficientBalance = source.readBigNumber();
   const _lastCreatedGameId = source.readBigNumber();
-  return { $$type: 'FlipCoinGameFactory$Data' as const, stopped: _stopped, owner: _owner, serviceFeeNumerator: _serviceFeeNumerator, referrerFeeNumerator: _referrerFeeNumerator, lowestBid: _lowestBid, highestBid: _highestBid, waitingForOpenBidSeconds: _waitingForOpenBidSeconds, minReferrerPayoutValue: _minReferrerPayoutValue, feeReceiver: _feeReceiver, totalGamesCreated: _totalGamesCreated, totalGamesInitialized: _totalGamesInitialized, totalGamesFinished: _totalGamesFinished, totalGamesCancelled: _totalGamesCancelled, totalGamesDrawn: _totalGamesDrawn, lastCreatedGameId: _lastCreatedGameId };
+  return { $$type: 'PODGameFactory$Data' as const, stopped: _stopped, owner: _owner, serviceFeeNumerator: _serviceFeeNumerator, referrerFeeNumerator: _referrerFeeNumerator, lowestBid: _lowestBid, highestBid: _highestBid, waitingForOpenBidSeconds: _waitingForOpenBidSeconds, minReferrerPayoutValue: _minReferrerPayoutValue, feeReceiver: _feeReceiver, salt: _salt, totalGamesCreated: _totalGamesCreated, totalGamesInitialized: _totalGamesInitialized, totalGamesFinished: _totalGamesFinished, totalGamesCancelled: _totalGamesCancelled, totalGamesDrawn: _totalGamesDrawn, totalSecretsOpened: _totalSecretsOpened, totalInsufficientBalance: _totalInsufficientBalance, lastCreatedGameId: _lastCreatedGameId };
 }
 
-export function storeTupleFlipCoinGameFactory$Data(source: FlipCoinGameFactory$Data) {
+export function storeTuplePODGameFactory$Data(source: PODGameFactory$Data) {
   const builder = new TupleBuilder();
   builder.writeBoolean(source.stopped);
   builder.writeAddress(source.owner);
@@ -4337,22 +4367,25 @@ export function storeTupleFlipCoinGameFactory$Data(source: FlipCoinGameFactory$D
   builder.writeNumber(source.waitingForOpenBidSeconds);
   builder.writeNumber(source.minReferrerPayoutValue);
   builder.writeAddress(source.feeReceiver);
+  builder.writeNumber(source.salt);
   builder.writeNumber(source.totalGamesCreated);
   builder.writeNumber(source.totalGamesInitialized);
   builder.writeNumber(source.totalGamesFinished);
   builder.writeNumber(source.totalGamesCancelled);
   builder.writeNumber(source.totalGamesDrawn);
+  builder.writeNumber(source.totalSecretsOpened);
+  builder.writeNumber(source.totalInsufficientBalance);
   builder.writeNumber(source.lastCreatedGameId);
   return builder.build();
 }
 
-export function dictValueParserFlipCoinGameFactory$Data(): DictionaryValue<FlipCoinGameFactory$Data> {
+export function dictValueParserPODGameFactory$Data(): DictionaryValue<PODGameFactory$Data> {
   return {
     serialize: (src, builder) => {
-      builder.storeRef(beginCell().store(storeFlipCoinGameFactory$Data(src)).endCell());
+      builder.storeRef(beginCell().store(storePODGameFactory$Data(src)).endCell());
     },
     parse: (src) => {
-      return loadFlipCoinGameFactory$Data(src.loadRef().beginParse());
+      return loadPODGameFactory$Data(src.loadRef().beginParse());
     }
   }
 }
@@ -4608,7 +4641,7 @@ const ReferrerWallet_types: ABIType[] = [
   { "name": "SecretOpenedNotify", "header": 1202198728, "fields": [{ "name": "gameId", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }, { "name": "player", "type": { "kind": "simple", "type": "address", "optional": false } }, { "name": "coinSide", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 8 } }] },
   { "name": "DrawNotify", "header": 317981831, "fields": [{ "name": "gameId", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }] },
   { "name": "InsufficientBalanceNotify", "header": 4148213171, "fields": [{ "name": "gameId", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }, { "name": "required", "type": { "kind": "simple", "type": "uint", "optional": false, "format": "coins" } }, { "name": "actual", "type": { "kind": "simple", "type": "uint", "optional": false, "format": "coins" } }] },
-  { "name": "DetailedStats", "header": null, "fields": [{ "name": "totalGamesCreated", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }, { "name": "totalGamesInitialized", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }, { "name": "totalGamesFinished", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }, { "name": "totalGamesCancelled", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }, { "name": "totalGamesDrawn", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }] },
+  { "name": "DetailedStats", "header": null, "fields": [{ "name": "totalGamesCreated", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }, { "name": "totalGamesInitialized", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }, { "name": "totalGamesFinished", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }, { "name": "totalGamesCancelled", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }, { "name": "totalGamesDrawn", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }, { "name": "totalSecretsOpened", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }, { "name": "totalInsufficientBalance", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }] },
   { "name": "FactoryConfig", "header": null, "fields": [{ "name": "serviceFeeNumerator", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 32 } }, { "name": "referrerFeeNumerator", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 32 } }, { "name": "waitingForOpenBidSeconds", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 32 } }, { "name": "feeReceiver", "type": { "kind": "simple", "type": "address", "optional": false } }, { "name": "stopped", "type": { "kind": "simple", "type": "bool", "optional": false } }] },
   { "name": "GameAddressBatch", "header": null, "fields": [{ "name": "startId", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 32 } }, { "name": "addresses", "type": { "kind": "dict", "key": "uint", "keyFormat": 32, "value": "address" } }] },
   { "name": "GameInfo", "header": null, "fields": [{ "name": "gameId", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }, { "name": "status", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 8 } }, { "name": "playerOne", "type": { "kind": "simple", "type": "address", "optional": false } }, { "name": "playerTwo", "type": { "kind": "simple", "type": "address", "optional": false } }, { "name": "bidValue", "type": { "kind": "simple", "type": "uint", "optional": false, "format": "coins" } }, { "name": "totalGainings", "type": { "kind": "simple", "type": "uint", "optional": false, "format": "coins" } }, { "name": "playerOneChosenSide", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 2 } }, { "name": "playerTwoChosenSide", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 2 } }, { "name": "gameCreatedTimestamp", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 32 } }, { "name": "gameStartedTimestamp", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 32 } }, { "name": "winner", "type": { "kind": "simple", "type": "address", "optional": false } }, { "name": "configReceived", "type": { "kind": "simple", "type": "bool", "optional": false } }] },
@@ -4619,7 +4652,7 @@ const ReferrerWallet_types: ABIType[] = [
   { "name": "ReferrerRewardAdded", "header": 2959210841, "fields": [{ "name": "gameId", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }, { "name": "amount", "type": { "kind": "simple", "type": "uint", "optional": false, "format": "coins" } }, { "name": "timestamp", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 32 } }] },
   { "name": "ReferrerWithdrawn", "header": 1896431876, "fields": [{ "name": "amount", "type": { "kind": "simple", "type": "uint", "optional": false, "format": "coins" } }, { "name": "timestamp", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 32 } }] },
   { "name": "ReferrerWallet$Data", "header": null, "fields": [{ "name": "referrer", "type": { "kind": "simple", "type": "address", "optional": false } }, { "name": "factory", "type": { "kind": "simple", "type": "address", "optional": false } }, { "name": "totalEarned", "type": { "kind": "simple", "type": "uint", "optional": false, "format": "coins" } }, { "name": "availableToWithdraw", "type": { "kind": "simple", "type": "uint", "optional": false, "format": "coins" } }, { "name": "minWithdrawAmount", "type": { "kind": "simple", "type": "uint", "optional": false, "format": "coins" } }, { "name": "lastWithdrawalAmount", "type": { "kind": "simple", "type": "uint", "optional": false, "format": "coins" } }] },
-  { "name": "FlipCoinGameFactory$Data", "header": null, "fields": [{ "name": "stopped", "type": { "kind": "simple", "type": "bool", "optional": false } }, { "name": "owner", "type": { "kind": "simple", "type": "address", "optional": false } }, { "name": "serviceFeeNumerator", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }, { "name": "referrerFeeNumerator", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }, { "name": "lowestBid", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }, { "name": "highestBid", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }, { "name": "waitingForOpenBidSeconds", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }, { "name": "minReferrerPayoutValue", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }, { "name": "feeReceiver", "type": { "kind": "simple", "type": "address", "optional": false } }, { "name": "totalGamesCreated", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }, { "name": "totalGamesInitialized", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }, { "name": "totalGamesFinished", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }, { "name": "totalGamesCancelled", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }, { "name": "totalGamesDrawn", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }, { "name": "lastCreatedGameId", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }] },
+  { "name": "PODGameFactory$Data", "header": null, "fields": [{ "name": "stopped", "type": { "kind": "simple", "type": "bool", "optional": false } }, { "name": "owner", "type": { "kind": "simple", "type": "address", "optional": false } }, { "name": "serviceFeeNumerator", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }, { "name": "referrerFeeNumerator", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }, { "name": "lowestBid", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }, { "name": "highestBid", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }, { "name": "waitingForOpenBidSeconds", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }, { "name": "minReferrerPayoutValue", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 256 } }, { "name": "feeReceiver", "type": { "kind": "simple", "type": "address", "optional": false } }, { "name": "salt", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }, { "name": "totalGamesCreated", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }, { "name": "totalGamesInitialized", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }, { "name": "totalGamesFinished", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }, { "name": "totalGamesCancelled", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }, { "name": "totalGamesDrawn", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }, { "name": "totalSecretsOpened", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }, { "name": "totalInsufficientBalance", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }, { "name": "lastCreatedGameId", "type": { "kind": "simple", "type": "uint", "optional": false, "format": 64 } }] },
 ]
 
 const ReferrerWallet_opcodes = {
@@ -4814,4 +4847,5 @@ export class ReferrerWallet implements Contract {
     const result = source.readBigNumber();
     return result;
   }
+
 }

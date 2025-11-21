@@ -4,7 +4,7 @@ import InitDataPage from '@/pages/InitDataPage.vue';
 import ThemeParamsPage from '@/pages/ThemeParamsPage.vue';
 import LaunchParamsPage from '@/pages/LaunchParamsPage.vue';
 import TonConnectPage from '@/pages/TonConnectPage.vue';
-import FlipCoinPage from '@/pages/FlipCoinPage.vue';
+import PODPage from '@/pages/PODPage.vue';
 import IconTonConnect from '@/components/IconTonConnect.vue';
 
 export const routes = [
@@ -14,11 +14,11 @@ export const routes = [
     component: IndexPage,
   },
   {
-    path: '/flip-coin',
-    name: 'flip-coin',
-    component: FlipCoinPage,
+    path: '/pod',
+    name: 'pod',
+    component: PODPage,
     meta: {
-      title: 'FlipCoin Game',
+      title: 'Pod Game',
     },
   },
   {

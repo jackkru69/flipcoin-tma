@@ -1,12 +1,12 @@
-# FlipCoin Minimal Interface
+# Pod Minimal Interface
 
-Минимальный интерфейс для тестирования контрактов FlipCoin.
+Минимальный интерфейс для тестирования контрактов Pod.
 
 ## Установка
 
 1. Установите зависимости (если еще не установлены):
 ```bash
-cd flipcoin-tma
+cd pod-tma
 pnpm install
 ```
 
@@ -17,7 +17,7 @@ cp .env.example .env
 
 3. Добавьте адрес задеплоенной фабрики контрактов в `.env`:
 ```env
-VITE_FLIPCOIN_FACTORY_ADDRESS=EQD...your_factory_address_here
+VITE_POD_FACTORY_ADDRESS=EQD...your_factory_address_here
 ```
 
 ## Структура
@@ -26,10 +26,10 @@ VITE_FLIPCOIN_FACTORY_ADDRESS=EQD...your_factory_address_here
 
 - `src/types/contract.ts` - TypeScript типы для контрактов
 - `src/utils/contract.ts` - Утилиты для работы с контрактами (хеширование, форматирование)
-- `src/composables/useFlipCoinContract.ts` - Composable для загрузки игр и работы с фабрикой (использует @tanstack/vue-query)
+- `src/composables/usePODContract.ts` - Composable для загрузки игр и работы с фабрикой (использует @tanstack/vue-query)
 - `src/components/GameList.vue` - Компонент списка игр с фильтрами
 - `src/components/GameCard.vue` - Компонент карточки игры
-- `src/pages/FlipCoinPage.vue` - Главная страница интерфейса
+- `src/pages/PODPage.vue` - Главная страница интерфейса
 
 ### Технологии:
 
@@ -81,8 +81,8 @@ pnpm dev:https
 ```
 
 Откройте в браузере:
-- Десктоп: `http://localhost:5173/flip-coin`
-- Мобильный: `https://localhost:5173/flip-coin` (требует HTTPS!)
+- Десктоп: `http://localhost:5173/pod`
+- Мобильный: `https://localhost:5173/pod` (требует HTTPS!)
 
 ### Быстрый старт для тестирования
 
@@ -99,7 +99,7 @@ pnpm dev:https
 
 3. Обновите `public/tonconnect-manifest.json` с вашим доменом
 
-4. Откройте маршрут `/flip-coin` в приложении
+4. Откройте маршрут `/pod` в приложении
 
 ⚠️ **Важно:** Android требует HTTPS для TON Connect! См. [DEPLOY.md](./DEPLOY.md)
 
@@ -124,13 +124,13 @@ pnpm deploy
 pnpm dev
 ```
 
-Откройте в браузере `/flip-coin` маршрут.
+Откройте в браузере `/pod` маршрут.
 
 ## Особенности реализации
 
 ### Vue Query интеграция
 
-Composable `useFlipCoinContract` использует `@tanstack/vue-query` для управления данными:
+Composable `usePODContract` использует `@tanstack/vue-query` для управления данными:
 
 - **statsQuery** - автоматически обновляется каждую минуту, кешируется на 30 секунд
 - **configQuery** - кешируется на 5 минут (конфигурация редко меняется)
