@@ -1,20 +1,13 @@
 import { computed } from 'vue';
 import { useQuery, useInfiniteQuery } from '@tanstack/vue-query';
-import { Address, TonClient } from '@ton/ton';
+import { Address } from '@ton/ton';
 import type { GameInfo, FactoryConfig, FactoryStats } from '../types/contract';
-import { getHttpEndpoint } from '@orbs-network/ton-access';
 import { PODGameFactory } from '../wrappers/PODGameFactory_PODGameFactory';
 import { Game } from '../wrappers/PODGameFactory_Game';
+import { createTonClient } from '@/lib/tonClient';
 
 const BATCH_SIZE = 10;
 
-// Create TonClient instance
-async function createTonClient() {
-  return new TonClient({
-    endpoint: await getHttpEndpoint({ network: 'testnet' }),
-    apiKey: import.meta.env.VITE_TONCENTER_API_KEY || undefined,
-  });
-}
 
 // Fetch factory statistics
 async function fetchFactoryStats(factoryAddress: string): Promise<FactoryStats> {

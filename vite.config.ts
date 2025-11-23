@@ -7,7 +7,7 @@ import mkcert from "vite-plugin-mkcert";
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   base: "/pod-tma/",
   build: {
     sourcemap: false,
@@ -37,5 +37,11 @@ export default defineConfig({
   server: {
     // Exposes your dev server and makes it accessible for the devices in the same network.
     host: true,
+    proxy: mode === "development" ? {
+      '/jsonRPC': {
+        target: process.env.VITE_LOCAL_RPC_URL || 'http://localhost:8082',
+        changeOrigin: true,
+      }
+    } : undefined
   },
-});
+}));

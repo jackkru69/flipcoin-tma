@@ -284,8 +284,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { Address, toNano } from '@ton/core';
-import { TonClient } from '@ton/ton';
-import { getHttpEndpoint } from '@orbs-network/ton-access';
 import { useTonConnectUI } from '../tonconnect/useTonConnectUI';
 import { useTonWallet } from '../tonconnect/useTonWallet';
 import GameList from '../components/GameList.vue';
@@ -303,6 +301,7 @@ import {
 import { COIN_SIDE_HEADS, COIN_SIDE_TAILS, type GameInfo } from '../types/contract';
 import { PODGameFactory } from '../wrappers/PODGameFactory_PODGameFactory';
 import { Game } from '../wrappers/PODGameFactory_Game';
+import { createTonClient } from '@/lib/tonClient';
 
 const factoryAddress = import.meta.env.VITE_POD_FACTORY_ADDRESS;
 
@@ -354,18 +353,7 @@ onMounted(async () => {
   }
 });
 
-// Create TonClient instance
-let tonClient: TonClient | null = null;
 
-async function getTonClient() {
-  if (!tonClient) {
-    tonClient = new TonClient({
-      endpoint: await getHttpEndpoint({ network: 'testnet' }),
-      apiKey: import.meta.env.VITE_TONCENTER_API_KEY || undefined,
-    });
-  }
-  return tonClient;
-}
 
 // Create game modal
 const showCreateModal = ref(false);
@@ -467,7 +455,7 @@ async function handleCreateGame() {
       : null;
 
     // Get TonClient and open factory contract
-    const client = await getTonClient();
+    const client = await createTonClient();
     const factory = client.open(
       PODGameFactory.fromAddress(Address.parse(factoryAddress))
     );
@@ -544,7 +532,7 @@ async function confirmJoinGame() {
       : null;
 
     // Get TonClient and open factory contract
-    const client = await getTonClient();
+    const client = await createTonClient();
     const factory = client.open(
       PODGameFactory.fromAddress(Address.parse(factoryAddress))
     );
@@ -602,7 +590,7 @@ async function confirmOpenBid() {
   openingBid.value = true;
   try {
     // Get TonClient
-    const client = await getTonClient();
+    const client = await createTonClient();
 
     // Get factory and calculate game address
     const factory = client.open(
@@ -680,7 +668,7 @@ async function handleCancelGame(gameId: bigint) {
 
   try {
     // Get TonClient
-    const client = await getTonClient();
+    const client = await createTonClient();
 
     // Get factory and calculate game address
     const factory = client.open(
