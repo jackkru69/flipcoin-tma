@@ -3,7 +3,7 @@
     <div class="header">
       <h1>🪙 Pod Game</h1>
       <div class="wallet-info" v-if="wallet">
-        <span class="wallet-address">{{ shortenAddress(wallet) }}</span>
+        <span class="wallet-address">{{ shortenAddress(Address.parse(wallet)) }}</span>
         <button @click="showExportSeedModal = true" class="btn-export" title="Экспорт seed-фразы">
           🔑
         </button>
