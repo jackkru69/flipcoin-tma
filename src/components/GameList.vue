@@ -35,6 +35,7 @@
         :key="game.gameId.toString()"
         :game="game"
         :user-address="userAddress"
+        :reservation="reservations?.get(Number(game.gameId))"
         @join="$emit('join', $event)"
         @open-bid="$emit('openBid', $event)"
         @cancel="$emit('cancel', $event)"
@@ -54,6 +55,7 @@ import { ref, computed } from 'vue';
 import { Address } from '@ton/core';
 import GameCard from './GameCard.vue';
 import type { GameInfo, FactoryStats } from '../types/contract';
+import type { Reservation } from '../types/reservation';
 import { GAME_STATUS_WAITING_FOR_OPPONENT, GAME_STATUS_WAITING_FOR_OPEN_BIDS } from '../types/contract';
 
 interface Props {
@@ -64,6 +66,7 @@ interface Props {
   userAddress?: Address;
   hasMore: boolean;
   loadingMore: boolean;
+  reservations?: ReadonlyMap<number, Reservation>;
 }
 
 const props = defineProps<Props>();

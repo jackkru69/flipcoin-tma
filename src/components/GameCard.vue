@@ -1,8 +1,18 @@
 <template>
-  <div class="game-card" :class="statusClass">
+  <div class="game-card" :class="[statusClass, { 'is-reserved': isReserved && !isReservedByMe }]">
     <div class="card-header">
       <span class="game-id">Игра #{{ game.gameId }}</span>
       <span class="status-badge">{{ statusLabel }}</span>
+    </div>
+
+    <!-- Reservation indicator -->
+    <div v-if="isReserved" class="reservation-info" :class="{ 'my-reservation': isReservedByMe }">
+      <span v-if="isReservedByMe">
+        🔒 Забронировано вами ({{ timeRemainingText }})
+      </span>
+      <span v-else>
+        🔒 Забронировано другим игроком
+      </span>
     </div>
 
     <div class="card-body">
@@ -49,12 +59,15 @@
     </div>
 
     <div class="card-actions">
+      <!-- Join button - disabled if reserved by another player (T024.1) -->
       <button
         v-if="canJoin"
-        @click="$emit('join', game.gameId)"
+        @click="handleJoinClick"
+        :disabled="isReserved && !isReservedByMe"
         class="btn-primary"
+        :class="{ 'btn-disabled': isReserved && !isReservedByMe }"
       >
-        Присоединиться
+        {{ isReservedByMe ? 'Продолжить' : 'Присоединиться' }}
       </button>
 
       <button
@@ -77,9 +90,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { Address } from '@ton/core';
 import type { GameInfo } from '../types/contract';
+import type { Reservation } from '../types/reservation';
+import { isReservationActive, getReservationTimeRemaining } from '../types/reservation';
 import {
   GAME_STATUS_LABELS,
   COIN_SIDE_LABELS,
@@ -94,14 +109,83 @@ import { formatTon, shortenAddress } from '../utils/contract';
 interface Props {
   game: GameInfo;
   userAddress?: Address;
+  reservation?: Reservation | null;
 }
 
 const props = defineProps<Props>();
-defineEmits<{
+const emit = defineEmits<{
   join: [gameId: bigint];
   openBid: [gameId: bigint];
   cancel: [gameId: bigint];
 }>();
+
+// Timer for countdown
+const timeRemaining = ref(0);
+let countdownInterval: ReturnType<typeof setInterval> | null = null;
+
+// Start countdown timer when there's a reservation
+onMounted(() => {
+  if (props.reservation && isReservationActive(props.reservation)) {
+    updateTimeRemaining();
+    countdownInterval = setInterval(updateTimeRemaining, 1000);
+  }
+});
+
+onUnmounted(() => {
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+  }
+});
+
+function updateTimeRemaining() {
+  if (props.reservation) {
+    timeRemaining.value = getReservationTimeRemaining(props.reservation);
+    if (timeRemaining.value <= 0 && countdownInterval) {
+      clearInterval(countdownInterval);
+    }
+  }
+}
+
+// Reservation computed properties
+const isReserved = computed(() => {
+  return isReservationActive(props.reservation);
+});
+
+const isReservedByMe = computed(() => {
+  if (!props.userAddress || !props.reservation) return false;
+  if (!isReservationActive(props.reservation)) return false;
+  
+  // Normalize addresses for comparison - both to raw format
+  try {
+    const reservationAddr = Address.parse(props.reservation.wallet_address).toRawString();
+    const userAddr = props.userAddress.toRawString();
+    return reservationAddr === userAddr;
+  } catch {
+    // Fallback to string comparison if parsing fails
+    return props.reservation.wallet_address === props.userAddress.toString();
+  }
+});
+
+const timeRemainingText = computed(() => {
+  const seconds = timeRemaining.value;
+  if (seconds <= 0) return '0с';
+  return `${seconds}с`;
+});
+
+// Debounce flag to prevent rapid clicks (T024.2)
+const isJoinClicked = ref(false);
+
+function handleJoinClick() {
+  if (isJoinClicked.value) return;
+  isJoinClicked.value = true;
+
+  emit('join', props.game.gameId);
+
+  // Reset after 500ms
+  setTimeout(() => {
+    isJoinClicked.value = false;
+  }, 500);
+}
 
 const statusLabel = computed(() => {
   return GAME_STATUS_LABELS[Number(props.game.status)] || 'Неизвестно';
@@ -336,5 +420,31 @@ const formatTimestamp = (timestamp: bigint): string => {
 .btn-danger {
   background: #f44336;
   color: #fff;
+}
+
+.btn-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Reservation styles */
+.game-card.is-reserved {
+  opacity: 0.8;
+  border-color: #9e9e9e;
+}
+
+.reservation-info {
+  padding: 0.5rem 0.75rem;
+  background: rgba(158, 158, 158, 0.2);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.reservation-info.my-reservation {
+  background: rgba(76, 175, 80, 0.2);
+  color: #4caf50;
 }
 </style>

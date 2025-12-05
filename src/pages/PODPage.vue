@@ -31,6 +31,7 @@
       :stats="stats"
       :user-address="wallet ? Address.parse(wallet) : undefined"
       :has-more="hasMore"
+      :reservations="reservations"
       @join="handleJoinGame"
       @open-bid="handleOpenBid"
       @cancel="handleCancelGame"
@@ -127,11 +128,11 @@
 
     <!-- Join Game Modal -->
     <Teleport to="body">
-      <div v-if="showJoinModal" class="modal-overlay" @click.self="showJoinModal = false">
+      <div v-if="showJoinModal" class="modal-overlay" @click.self="closeJoinModal">
         <div class="modal">
           <div class="modal-header">
             <h3>Присоединиться к игре #{{ joinGameData?.gameId }}</h3>
-            <button @click="showJoinModal = false" class="btn-close">×</button>
+            <button @click="closeJoinModal" class="btn-close">×</button>
           </div>
 
           <div class="modal-body">
@@ -183,7 +184,7 @@
           </div>
 
           <div class="modal-footer">
-            <button @click="showJoinModal = false" class="btn-secondary">
+            <button @click="closeJoinModal" class="btn-secondary">
               Отмена
             </button>
             <button
@@ -288,6 +289,8 @@ import { useTonConnectUI } from '../tonconnect/useTonConnectUI';
 import { useTonWallet } from '../tonconnect/useTonWallet';
 import GameList from '../components/GameList.vue';
 import { usePODContract } from '../composables/usePODContract';
+import { useGamesAPI } from '../composables/useGamesAPI';
+import { useReservation } from '../composables/useReservation';
 import {
   generateSeedPhrase,
   getSignatureFromSeed,
@@ -298,7 +301,7 @@ import {
   calculateJoinGameValue,
   createTonConnectSender,
 } from '../utils/contract';
-import { COIN_SIDE_HEADS, COIN_SIDE_TAILS, type GameInfo } from '../types/contract';
+import { COIN_SIDE_HEADS, COIN_SIDE_TAILS, GAME_STATUS_WAITING_FOR_OPPONENT, type GameInfo } from '../types/contract';
 import { PODGameFactory } from '../wrappers/PODGameFactory_PODGameFactory';
 import { Game } from '../wrappers/PODGameFactory_Game';
 import { createTonClient } from '@/lib/tonClient';
@@ -309,22 +312,54 @@ if (!factoryAddress) {
   console.error('Factory address not configured! Add VITE_POD_FACTORY_ADDRESS to .env');
 }
 
+// Use API for games list with reservation status
 const {
   games,
-  loading,
-  loadingMore,
-  error,
+  reservations,
+  isLoading: apiLoading,
+  isGameReserved,
+  isReservedByWallet,
+  updateReservation,
+  refetch: refetchGames,
+  hasNextPage,
+  fetchNextPage,
+  isFetchingNextPage,
+  error: gamesError,
+} = useGamesAPI(GAME_STATUS_WAITING_FOR_OPPONENT);
+
+// Use contract for stats and config (needed for creating games)
+const {
   stats,
   config,
-  hasMore,
-  loadGames,
-  loadMore,
-  refreshGames
+  loadGames: loadContractData,
 } = usePODContract(factoryAddress);
+
+// Computed properties for template compatibility
+const loading = computed(() => apiLoading.value);
+const loadingMore = computed(() => isFetchingNextPage.value);
+const error = computed(() => gamesError.value ? String(gamesError.value) : null);
+const hasMore = computed(() => hasNextPage.value ?? false);
+
+// Functions for compatibility
+function loadMore() {
+  fetchNextPage();
+}
+
+function refreshGames() {
+  refetchGames();
+  loadContractData(); // Also refresh stats/config
+}
 
 const { tonConnectUI } = useTonConnectUI();
 const { wallet: tonWallet } = useTonWallet();
 const wallet = computed(() => tonWallet.value?.account.address);
+
+// Reservation composable (for reserve/cancel actions)
+const {
+  reserveGame,
+  cancelReservation,
+  error: reservationError,
+} = useReservation();
 
 // Storage for user's seed phrase (in production, use secure storage)
 const userSeedPhrase = ref<string[] | null>(null);
@@ -332,7 +367,8 @@ const userSeedPhrase = ref<string[] | null>(null);
 // Initialize or load seed phrase
 onMounted(async () => {
   if (factoryAddress) {
-    loadGames();
+    loadContractData(); // Load stats and config from contract
+    // Games are automatically fetched by useGamesAPI
   }
 
   // Try to load seed phrase from localStorage
@@ -351,6 +387,35 @@ onMounted(async () => {
     localStorage.setItem('pod_seed', JSON.stringify(userSeedPhrase.value));
     console.log('Generated new seed phrase:', userSeedPhrase.value.join(' '));
   }
+
+  // Handle page unload/visibility change to cancel reservations (T039)
+  const handleVisibilityChange = async () => {
+    if (document.visibilityState === 'hidden' && wallet.value && joinGameData.value) {
+      // Cancel reservation when page becomes hidden (user switches tab/minimizes)
+      const gameIdNum = Number(joinGameData.value.gameId);
+      if (isReservedByWallet(gameIdNum, wallet.value)) {
+        await cancelReservation(gameIdNum, wallet.value);
+        joinGameData.value = null;
+        showJoinModal.value = false;
+      }
+    }
+  };
+
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+
+  // Also handle beforeunload for page close/refresh
+  const handleBeforeUnload = () => {
+    if (wallet.value && joinGameData.value) {
+      const gameIdNum = Number(joinGameData.value.gameId);
+      if (isReservedByWallet(gameIdNum, wallet.value)) {
+        // Use sendBeacon for reliable cancellation on page unload
+        const url = `/api/v1/games/${gameIdNum}/reserve`;
+        navigator.sendBeacon(url, JSON.stringify({ wallet: wallet.value }));
+      }
+    }
+  };
+
+  window.addEventListener('beforeunload', handleBeforeUnload);
 });
 
 
@@ -502,10 +567,41 @@ async function handleCreateGame() {
 
 async function handleJoinGame(gameId: bigint) {
   const game = games.value.find(g => g.gameId === gameId);
-  if (!game) return;
+  if (!game || !wallet.value) return;
+
+  // Check if game is already reserved by someone else
+  const gameIdNum = Number(gameId);
+  if (isGameReserved(gameIdNum) && !isReservedByWallet(gameIdNum, wallet.value)) {
+    alert('Эта игра уже забронирована другим игроком');
+    return;
+  }
+
+  // Try to reserve the game first (T025)
+  if (!isReservedByWallet(gameIdNum, wallet.value)) {
+    const reservation = await reserveGame(gameIdNum, wallet.value);
+    if (!reservation) {
+      // Show error from reservation
+      if (reservationError.value) {
+        alert(reservationError.value);
+      }
+      return;
+    }
+  }
 
   joinGameData.value = game;
   showJoinModal.value = true;
+}
+
+// Close join modal and cancel reservation if exists (T025)
+async function closeJoinModal() {
+  if (joinGameData.value && wallet.value) {
+    const gameIdNum = Number(joinGameData.value.gameId);
+    if (isReservedByWallet(gameIdNum, wallet.value)) {
+      await cancelReservation(gameIdNum, wallet.value);
+    }
+  }
+  joinGameData.value = null;
+  showJoinModal.value = false;
 }
 
 async function confirmJoinGame() {
