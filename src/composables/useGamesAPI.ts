@@ -159,7 +159,7 @@ export function useGamesAPI(status: number = GAME_STATUS_WAITING_FOR_OPPONENT) {
     if (!reservation || reservation.status !== 'active') {
       return false;
     }
-    
+
     // Normalize addresses for comparison - both to raw format
     try {
       const reservationAddr = Address.parse(reservation.wallet_address).toRawString();

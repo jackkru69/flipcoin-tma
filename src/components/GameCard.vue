@@ -154,7 +154,7 @@ const isReserved = computed(() => {
 const isReservedByMe = computed(() => {
   if (!props.userAddress || !props.reservation) return false;
   if (!isReservationActive(props.reservation)) return false;
-  
+
   // Normalize addresses for comparison - both to raw format
   try {
     const reservationAddr = Address.parse(props.reservation.wallet_address).toRawString();
