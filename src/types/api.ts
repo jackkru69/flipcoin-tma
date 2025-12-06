@@ -64,3 +64,25 @@ export interface APIError {
   message: string;
   details?: Record<string, unknown>;
 }
+
+/**
+ * Connection status for health check
+ */
+export type ConnectionStatus = 'connected' | 'disconnected' | 'not_configured';
+
+/**
+ * TON Center API status
+ */
+export type TonCenterStatus = 'connected' | 'recovering' | 'circuit_breaker_open' | 'not_configured';
+
+/**
+ * Backend health status from GET /api/v1/health
+ */
+export interface HealthStatus {
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  database: ConnectionStatus;
+  event_source_status: ConnectionStatus;
+  event_source_type: 'websocket' | 'http' | 'not_configured';
+  ton_center_api: TonCenterStatus;
+  timestamp: string; // ISO 8601
+}

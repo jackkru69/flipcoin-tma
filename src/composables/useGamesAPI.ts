@@ -1,15 +1,26 @@
 /**
  * Composable for fetching games from API with reservation status
  * @module composables/useGamesAPI
+ *
+ * Integrates with:
+ * - TanStack Query for data fetching and caching
+ * - WebSocket for real-time updates when watching a specific game
  */
 
-import { computed, ref } from 'vue';
-import { useQuery, useInfiniteQuery } from '@tanstack/vue-query';
+import { computed, ref, watch, onUnmounted, type Ref } from 'vue';
+import { useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/vue-query';
 import { Address } from '@ton/core';
 import type { GameListResponse, APIGame } from '../types/api';
 import type { GameInfo } from '../types/contract';
 import type { Reservation } from '../types/reservation';
 import { GAME_STATUS_WAITING_FOR_OPPONENT } from '../types/contract';
+import { getWebSocketService } from '../services/websocket';
+import type { WSMessage } from '../types/websocket';
+import {
+  isGameStateUpdate,
+  isReservationCreated,
+  isReservationReleased,
+} from '../types/websocket';
 
 // API base URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8090';
@@ -215,5 +226,123 @@ export function useGamesAPI(status: number = GAME_STATUS_WAITING_FOR_OPPONENT) {
     fetchNextPage: () => paginatedGamesQuery.fetchNextPage(),
     hasNextPage: computed(() => paginatedGamesQuery.hasNextPage.value),
     isFetchingNextPage: computed(() => paginatedGamesQuery.isFetchingNextPage.value),
+  };
+}
+
+/**
+ * Composable that extends useGamesAPI with WebSocket integration for a specific game
+ * Use this when you need real-time updates for a particular game (e.g., join flow)
+ *
+ * @param watchedGameId - Reactive ref to the game ID to watch (null to disconnect)
+ * @param status - Game status filter for the list
+ */
+export function useGamesAPIWithWebSocket(
+  watchedGameId: Ref<number | null>,
+  status: number = GAME_STATUS_WAITING_FOR_OPPONENT
+) {
+  const queryClient = useQueryClient();
+  const gamesApi = useGamesAPI(status);
+  const wsService = getWebSocketService();
+
+  // Track unsubscribe function
+  let unsubscribeMessage: (() => void) | null = null;
+
+  /**
+   * Handle incoming WebSocket message
+   */
+  const handleWebSocketMessage = (message: WSMessage): void => {
+    if (isGameStateUpdate(message)) {
+      // Game state changed - invalidate queries to refresh data
+      console.log('[useGamesAPIWithWebSocket] Game state update:', message.game_id, 'status:', message.status);
+
+      // Invalidate all games queries to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['api', 'games'] });
+    } else if (isReservationCreated(message)) {
+      // Handle reservation creation
+      console.log('[useGamesAPIWithWebSocket] Reservation created for game:', message.game_id);
+
+      const reservation: Reservation = {
+        game_id: message.game_id,
+        wallet_address: message.reserved_by,
+        created_at: message.timestamp,
+        expires_at: message.expires_at,
+        status: 'active',
+      };
+      gamesApi.updateReservation(message.game_id, reservation);
+    } else if (isReservationReleased(message)) {
+      // Handle reservation release
+      console.log('[useGamesAPIWithWebSocket] Reservation released for game:', message.game_id, 'reason:', message.reason);
+
+      gamesApi.updateReservation(message.game_id, null);
+
+      // If reason is 'joined', invalidate queries as the game state changed
+      if (message.reason === 'joined') {
+        queryClient.invalidateQueries({ queryKey: ['api', 'games'] });
+      }
+    }
+  };
+
+  /**
+   * Get Telegram initData for WebSocket auth
+   */
+  const getInitData = (): string => {
+    try {
+      const tg = (window as Window & { Telegram?: { WebApp?: { initData?: string } } }).Telegram;
+      return tg?.WebApp?.initData ?? '';
+    } catch {
+      return '';
+    }
+  };
+
+  // Watch for game ID changes to connect/disconnect WebSocket
+  watch(
+    watchedGameId,
+    (newGameId, oldGameId) => {
+      if (newGameId === oldGameId) return;
+
+      // Clean up previous subscription
+      if (unsubscribeMessage) {
+        unsubscribeMessage();
+        unsubscribeMessage = null;
+      }
+
+      if (newGameId) {
+        // Connect to the game's WebSocket
+        wsService.connect(newGameId, getInitData());
+
+        // Subscribe to messages
+        unsubscribeMessage = wsService.onMessage(handleWebSocketMessage);
+
+        console.log('[useGamesAPIWithWebSocket] Connected to game:', newGameId);
+      } else {
+        // Disconnect
+        wsService.disconnect();
+        console.log('[useGamesAPIWithWebSocket] Disconnected');
+      }
+    },
+    { immediate: true }
+  );
+
+  // Cleanup on unmount
+  onUnmounted(() => {
+    if (unsubscribeMessage) {
+      unsubscribeMessage();
+      unsubscribeMessage = null;
+    }
+    // Don't disconnect WebSocket here - other components may be using it
+  });
+
+  /**
+   * Force refresh of games list
+   */
+  const forceRefresh = (): void => {
+    queryClient.invalidateQueries({ queryKey: ['api', 'games'] });
+  };
+
+  return {
+    ...gamesApi,
+
+    // Additional methods for WebSocket integration
+    forceRefresh,
   };
 }

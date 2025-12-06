@@ -4,6 +4,9 @@
       <h1>🪙 Pod Game</h1>
       <div class="wallet-info" v-if="wallet">
         <span class="wallet-address">{{ shortenAddress(Address.parse(wallet)) }}</span>
+        <button @click="goToProfile" class="btn-profile" title="Профиль">
+          👤
+        </button>
         <button @click="showExportSeedModal = true" class="btn-export" title="Экспорт seed-фразы">
           🔑
         </button>
@@ -15,7 +18,12 @@
     </div>
 
     <div class="actions" v-if="wallet">
-      <button @click="showCreateModal = true" class="btn-create">
+      <button
+        @click="showCreateModal = true"
+        class="btn-create"
+        :disabled="shouldDisableActions"
+        :title="shouldDisableActions ? 'Сервис временно недоступен' : ''"
+      >
         + Создать новую игру
       </button>
       <button @click="refreshGames" class="btn-refresh" :disabled="loading">
@@ -284,6 +292,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { Address, toNano } from '@ton/core';
 import { useTonConnectUI } from '../tonconnect/useTonConnectUI';
 import { useTonWallet } from '../tonconnect/useTonWallet';
@@ -291,6 +300,7 @@ import GameList from '../components/GameList.vue';
 import { usePODContract } from '../composables/usePODContract';
 import { useGamesAPI } from '../composables/useGamesAPI';
 import { useReservation } from '../composables/useReservation';
+import { useHealthCheck } from '../composables/useHealthCheck';
 import {
   generateSeedPhrase,
   getSignatureFromSeed,
@@ -360,6 +370,9 @@ const {
   cancelReservation,
   error: reservationError,
 } = useReservation();
+
+// Health check for graceful degradation
+const { shouldDisableActions } = useHealthCheck();
 
 // Storage for user's seed phrase (in production, use secure storage)
 const userSeedPhrase = ref<string[] | null>(null);
@@ -473,6 +486,12 @@ async function connect() {
 
 async function disconnect() {
   await tonConnectUI.disconnect();
+}
+
+const router = useRouter();
+
+function goToProfile() {
+  router.push('/profile');
 }
 
 async function copySeedPhrase() {
@@ -847,6 +866,20 @@ async function handleCancelGame(gameId: bigint) {
 }
 
 .btn-export:hover {
+  opacity: 0.8;
+}
+
+.btn-profile {
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 1.25rem;
+  background: var(--tg-theme-button-color, #2481cc);
+  transition: opacity 0.2s;
+}
+
+.btn-profile:hover {
   opacity: 0.8;
 }
 

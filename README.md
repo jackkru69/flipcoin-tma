@@ -212,3 +212,62 @@ file according to your project's information.
 - [Platform documentation](https://docs.telegram-mini-apps.com/)
 - [@tma.js/sdk-vue documentation](https://docs.telegram-mini-apps.com/packages/tma-js-sdk-vue)
 - [Telegram developers community chat](https://t.me/devs_cis)
+
+---
+
+## POD Game Features
+
+This application is integrated with the POD Game backend and includes the following features:
+
+### Backend Integration
+
+The frontend connects to a Go backend for real-time game data and user management:
+
+- **Games API**: Paginated game listings with TanStack Query
+- **WebSocket**: Per-game real-time updates for game state changes
+- **Health Monitoring**: Automatic backend health checks with user notifications
+
+### User Profile
+
+Access your profile by tapping the 👤 button in the header:
+
+- **Game Statistics**: Total games, wins, losses, win rate
+- **Referral Program**: Track referral earnings and invited users
+- **Game History**: Complete history with infinite scroll pagination
+
+### Components
+
+| Component | Description |
+|-----------|-------------|
+| `GameList` | Displays available games with reservation status |
+| `ConnectionStatus` | Shows WebSocket connection state |
+| `HealthBanner` | Displays backend health warnings |
+| `UserProfile` | User statistics display |
+| `ReferralStats` | Referral program summary |
+| `GameHistoryList` | Paginated game history |
+
+### Composables
+
+| Composable | Purpose |
+|------------|---------|
+| `useGamesAPI` | Game list with pagination and reservations |
+| `useWebSocket` | Per-game WebSocket connection management |
+| `useUserProfile` | User profile and referral stats |
+| `useGameHistory` | Paginated game history |
+| `useHealthCheck` | Backend health monitoring |
+| `useReservation` | Game reservation system |
+
+### Environment Variables
+
+```env
+VITE_BACKEND_API_URL=http://localhost:8080/api/v1
+VITE_BACKEND_WS_URL=ws://localhost:8080/ws
+VITE_POD_FACTORY_ADDRESS=<TON contract address>
+```
+
+### Architecture Notes
+
+- **WebSocket Pattern**: Per-game connections only (`/ws/games/:id`), not global
+- **Games List**: Uses polling (30s interval) for updates, not WebSocket
+- **Health Checks**: Polls `/api/v1/health` every 30 seconds
+- **Graceful Degradation**: Disables game creation when backend is unhealthy

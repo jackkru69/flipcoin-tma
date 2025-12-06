@@ -5,6 +5,7 @@ import ThemeParamsPage from '@/pages/ThemeParamsPage.vue';
 import LaunchParamsPage from '@/pages/LaunchParamsPage.vue';
 import TonConnectPage from '@/pages/TonConnectPage.vue';
 import PODPage from '@/pages/PODPage.vue';
+import ProfilePage from '@/pages/ProfilePage.vue';
 import IconTonConnect from '@/components/IconTonConnect.vue';
 
 export const routes = [
@@ -19,6 +20,14 @@ export const routes = [
     component: PODPage,
     meta: {
       title: 'Pod Game',
+    },
+  },
+  {
+    path: '/profile',
+    name: 'profile',
+    component: ProfilePage,
+    meta: {
+      title: 'Profile',
     },
   },
   {

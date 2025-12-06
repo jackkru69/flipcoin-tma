@@ -2,9 +2,12 @@
   <div class="game-list">
     <div class="header">
       <h2>Список игр</h2>
-      <div class="stats" v-if="stats">
-        <span>Создано: {{ stats.totalGamesCreated }}</span>
-        <span>Завершено: {{ stats.totalGamesFinished }}</span>
+      <div class="header-right">
+        <ConnectionStatus />
+        <div class="stats" v-if="stats">
+          <span>Создано: {{ stats.totalGamesCreated }}</span>
+          <span>Завершено: {{ stats.totalGamesFinished }}</span>
+        </div>
       </div>
     </div>
 
@@ -54,6 +57,7 @@
 import { ref, computed } from 'vue';
 import { Address } from '@ton/core';
 import GameCard from './GameCard.vue';
+import ConnectionStatus from './ConnectionStatus.vue';
 import type { GameInfo, FactoryStats } from '../types/contract';
 import type { Reservation } from '../types/reservation';
 import { GAME_STATUS_WAITING_FOR_OPPONENT, GAME_STATUS_WAITING_FOR_OPEN_BIDS } from '../types/contract';
@@ -112,6 +116,12 @@ const loadMore = () => {
 .header h2 {
   margin: 0;
   font-size: 1.5rem;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .stats {
