@@ -54,7 +54,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { Address } from '@ton/core';
 import GameCard from './GameCard.vue';
 import ConnectionStatus from './ConnectionStatus.vue';
@@ -79,21 +79,27 @@ const emit = defineEmits<{
   openBid: [gameId: bigint];
   cancel: [gameId: bigint];
   loadMore: [];
+  statusChange: [status: number | null];
 }>();
 
 const selectedStatus = ref<number | null>(null);
 
 const statusFilters = [
-  { value: null as number | null, label: 'Все' },
   { value: GAME_STATUS_WAITING_FOR_OPPONENT, label: 'Ожидают оппонента' },
   { value: GAME_STATUS_WAITING_FOR_OPEN_BIDS, label: 'Ожидают раскрытия' },
 ];
 
+// Initialize with first status filter
+selectedStatus.value = GAME_STATUS_WAITING_FOR_OPPONENT;
+
+// Watch for status changes and emit to parent (immediate: false to avoid emitting on mount)
+watch(selectedStatus, (newStatus) => {
+  emit('statusChange', newStatus);
+});
+
+// No local filtering - the API handles filtering by status
 const filteredGames = computed(() => {
-  if (selectedStatus.value === null) {
-    return props.games;
-  }
-  return props.games.filter(game => Number(game.status) === selectedStatus.value);
+  return props.games;
 });
 
 const loadMore = () => {

@@ -44,6 +44,7 @@
       @open-bid="handleOpenBid"
       @cancel="handleCancelGame"
       @load-more="loadMore"
+      @status-change="handleStatusChange"
     />
 
     <!-- Create Game Modal -->
@@ -322,6 +323,9 @@ if (!factoryAddress) {
   console.error('Factory address not configured! Add VITE_POD_FACTORY_ADDRESS to .env');
 }
 
+// Reactive status filter for games - allows switching between "waiting for opponent" and "waiting for reveal"
+const gameStatusFilter = ref<number | null>(GAME_STATUS_WAITING_FOR_OPPONENT);
+
 // Use API for games list with reservation status
 const {
   games,
@@ -329,15 +333,15 @@ const {
   isLoading: apiLoading,
   isGameReserved,
   isReservedByWallet,
-  updateReservation,
   refetch: refetchGames,
   hasNextPage,
   fetchNextPage,
   isFetchingNextPage,
   error: gamesError,
-} = useGamesAPI(GAME_STATUS_WAITING_FOR_OPPONENT);
+} = useGamesAPI(gameStatusFilter);
 
 // Use contract for stats and config (needed for creating games)
+// NOTE: Don't destructure 'games' from usePODContract - we use games from useGamesAPI instead
 const {
   stats,
   config,
@@ -358,6 +362,10 @@ function loadMore() {
 function refreshGames() {
   refetchGames();
   loadContractData(); // Also refresh stats/config
+}
+
+function handleStatusChange(status: number | null) {
+  gameStatusFilter.value = status;
 }
 
 const { tonConnectUI } = useTonConnectUI();

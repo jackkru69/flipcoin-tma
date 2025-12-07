@@ -81,24 +81,30 @@ export function apiGameToGameInfo(game: APIGame): GameInfo {
 /**
  * Composable for fetching games from API
  * Replaces usePODContract for game listing with API-based approach
+ * @param status - Reactive ref to game status filter, or a number (will be converted to ref)
  */
-export function useGamesAPI(status: number = GAME_STATUS_WAITING_FOR_OPPONENT) {
+export function useGamesAPI(status: Ref<number | null> | number | null = GAME_STATUS_WAITING_FOR_OPPONENT) {
+  // Convert status to ref if it's not already
+  const statusRef = typeof status === 'number' || status === null
+    ? ref(status)
+    : status;
+
   // Local state for reservations (updated via WebSocket)
   const reservationUpdates = ref<Map<number, Reservation | null>>(new Map());
 
   // Simple query for games list
   const gamesQuery = useQuery({
-    queryKey: ['api', 'games', status],
-    queryFn: () => fetchGames(status, 100, 0), // Fetch up to 100 games
+    queryKey: ['api', 'games', statusRef],
+    queryFn: () => fetchGames(statusRef.value ?? GAME_STATUS_WAITING_FOR_OPPONENT, 100, 0), // Fetch up to 100 games
     staleTime: 10000, // 10 seconds
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 
   // Infinite query for paginated games
   const paginatedGamesQuery = useInfiniteQuery({
-    queryKey: ['api', 'games', 'paginated', status],
+    queryKey: ['api', 'games', 'paginated', statusRef],
     queryFn: async ({ pageParam = 0 }) => {
-      return fetchGames(status, DEFAULT_PAGE_SIZE, pageParam);
+      return fetchGames(statusRef.value ?? GAME_STATUS_WAITING_FOR_OPPONENT, DEFAULT_PAGE_SIZE, pageParam);
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
@@ -126,7 +132,12 @@ export function useGamesAPI(status: number = GAME_STATUS_WAITING_FOR_OPPONENT) {
   // Simple games list as GameInfo for basic usage
   const games = computed((): GameInfo[] => {
     if (!gamesQuery.data.value) return [];
-    return gamesQuery.data.value.games.map((gwr) => apiGameToGameInfo(gwr.game));
+    const gamesList = gamesQuery.data.value.games.map((gwr) => apiGameToGameInfo(gwr.game));
+    console.log('[useGamesAPI] Returning games from API:', gamesList.length, 'games');
+    if (gamesList.length > 0) {
+      console.log('[useGamesAPI] First game playerOneChosenSide:', Number(gamesList[0].playerOneChosenSide));
+    }
+    return gamesList;
   });
 
   // Reservations map (gameId -> Reservation)
@@ -234,11 +245,11 @@ export function useGamesAPI(status: number = GAME_STATUS_WAITING_FOR_OPPONENT) {
  * Use this when you need real-time updates for a particular game (e.g., join flow)
  *
  * @param watchedGameId - Reactive ref to the game ID to watch (null to disconnect)
- * @param status - Game status filter for the list
+ * @param status - Game status filter for the list (can be reactive ref or number)
  */
 export function useGamesAPIWithWebSocket(
   watchedGameId: Ref<number | null>,
-  status: number = GAME_STATUS_WAITING_FOR_OPPONENT
+  status: Ref<number | null> | number | null = GAME_STATUS_WAITING_FOR_OPPONENT
 ) {
   const queryClient = useQueryClient();
   const gamesApi = useGamesAPI(status);

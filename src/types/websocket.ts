@@ -38,7 +38,7 @@ export interface WebSocketMessage {
 
 /**
  * All WebSocket message types
- * Note: game_joined and game_completed are represented as game_state_update
+ * Note: game_joined and game_completed are represented as game_update
  * with different status values:
  * - game_joined: status transitions from 1 (WAITING_FOR_OPPONENT) to 2 (WAITING_FOR_OPEN_BIDS)
  * - game_completed: status transitions to 3 (ENDED) or 4 (PAID)
@@ -52,14 +52,25 @@ export type WebSocketMessageType =
   | 'error';
 
 /**
- * Game state update message
+ * Game update message - full game data from backend matching OpenAPI spec
  */
 export interface GameStateUpdateMessage extends WebSocketMessage {
   type: 'game_state_update';
-  game_id: number;
-  status: number;
-  player_two_address?: string;
-  winner_address?: string;
+  data: {
+    game_id: number;
+    status: number;
+    player_one_address: string;
+    player_two_address?: string | null;
+    player_one_choice: number;
+    player_two_choice?: number | null;
+    bet_amount: number;
+    winner_address?: string | null;
+    payout_amount?: number | null;
+    created_at: string;
+    joined_at?: string | null;
+    revealed_at?: string | null;
+    completed_at?: string | null;
+  };
 }
 
 /**

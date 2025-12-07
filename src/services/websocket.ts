@@ -57,7 +57,7 @@ export type StateChangeHandler = (state: WebSocketState) => void;
  */
 export class WebSocketService {
   private ws: WebSocket | null = null;
-  private gameId: number | null = null;
+  private gameId: number | null = null; // null = global subscription, number = specific game
   private initData: string = '';
   private reconnectAttempts = 0;
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -87,11 +87,11 @@ export class WebSocketService {
   }
 
   /**
-   * Connect to a game's WebSocket endpoint
-   * @param gameId - The game ID to connect to
+   * Connect to a game's WebSocket endpoint or global endpoint
+   * @param gameId - The game ID to connect to, or null/0 for global subscription
    * @param initData - Telegram Mini App initData for authentication
    */
-  connect(gameId: number, initData: string): void {
+  connect(gameId: number | null, initData: string): void {
     // Clean up any existing connection
     this.disconnect();
 
@@ -106,6 +106,14 @@ export class WebSocketService {
     });
 
     this.createConnection();
+  }
+
+  /**
+   * Connect to global WebSocket for all game updates
+   * @param initData - Telegram Mini App initData for authentication
+   */
+  connectGlobal(initData: string = ''): void {
+    this.connect(null, initData);
   }
 
   /**
@@ -183,11 +191,6 @@ export class WebSocketService {
    * Create WebSocket connection
    */
   private createConnection(): void {
-    if (!this.gameId) {
-      console.error('[WebSocket] No game ID specified');
-      return;
-    }
-
     const url = this.buildConnectionUrl();
     console.log(`[WebSocket] Connecting to ${url}`);
 
@@ -202,6 +205,7 @@ export class WebSocketService {
 
   /**
    * Build WebSocket URL with authentication
+   * Supports both global (/ws/games) and per-game (/ws/games/:id) endpoints
    */
   private buildConnectionUrl(): string {
     const params = new URLSearchParams();
@@ -210,7 +214,16 @@ export class WebSocketService {
     }
     params.set('clientId', this.clientId);
 
-    return `${WS_BASE_URL}/games/${this.gameId}?${params.toString()}`;
+    // Normalize base URL - remove trailing /ws if present to avoid duplication
+    const baseUrl = WS_BASE_URL.replace(/\/ws\/?$/, '');
+    
+    // Global subscription (gameId is null or 0)
+    if (!this.gameId) {
+      return `${baseUrl}/ws/games?${params.toString()}`;
+    }
+    
+    // Per-game subscription
+    return `${baseUrl}/ws/games/${this.gameId}?${params.toString()}`;
   }
 
   /**
@@ -262,8 +275,9 @@ export class WebSocketService {
   private handleDisconnect(event: CloseEvent): void {
     this.ws = null;
 
-    // Don't reconnect if explicitly disconnected or game ended
-    if (event.code === 1000 || !this.gameId) {
+    // Don't reconnect if explicitly disconnected (code 1000)
+    // For global connections, gameId is null, so we check if we were connected
+    if (event.code === 1000) {
       this.updateState({
         status: 'disconnected',
         error: null,
@@ -271,8 +285,11 @@ export class WebSocketService {
       return;
     }
 
-    // Attempt reconnection
-    this.attemptReconnect();
+    // Attempt reconnection for both global and per-game connections
+    // For global: gameId is null, for per-game: gameId is set
+    if (this.state.status !== 'disconnected') {
+      this.attemptReconnect();
+    }
   }
 
   /**
@@ -285,8 +302,8 @@ export class WebSocketService {
       error: errorMessage,
     });
 
-    // Attempt reconnection if we have game context
-    if (this.gameId) {
+    // Attempt reconnection if we're in connecting/reconnecting state
+    if (this.state.status === 'connecting' || this.state.status === 'reconnecting') {
       this.attemptReconnect();
     }
   }

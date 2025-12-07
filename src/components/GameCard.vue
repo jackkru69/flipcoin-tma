@@ -222,21 +222,47 @@ const canJoin = computed(() => {
 });
 
 const canOpenBid = computed(() => {
-  if (!props.userAddress) return false;
-  const status = Number(props.game.status);
-  const isPlayer = props.game.playerOne.toString() === props.userAddress.toString() ||
-                   props.game.playerTwo.toString() === props.userAddress.toString();
+  if (!props.userAddress) {
+    console.log('[GameCard] No user address - canOpenBid = false');
+    return false;
+  }
 
-  if (status !== GAME_STATUS_WAITING_FOR_OPEN_BIDS || !isPlayer) return false;
+  const status = Number(props.game.status);
+  console.log('[GameCard] Game', props.game.gameId, 'status:', status, 'Expected:', GAME_STATUS_WAITING_FOR_OPEN_BIDS);
+
+  // Game must be in WAITING_FOR_OPEN_BIDS status (status 2)
+  if (status !== GAME_STATUS_WAITING_FOR_OPEN_BIDS) {
+    console.log('[GameCard] Wrong status - canOpenBid = false');
+    return false;
+  }
+
+  // Check if user is one of the players
+  const userAddrStr = props.userAddress.toString();
+  const isPlayerOne = props.game.playerOne.toString() === userAddrStr;
+  const isPlayerTwo = props.game.playerTwo.toString() === userAddrStr;
+
+  console.log('[GameCard] User check - isPlayerOne:', isPlayerOne, 'isPlayerTwo:', isPlayerTwo);
+  console.log('[GameCard] Addresses - P1:', props.game.playerOne.toString(), 'P2:', props.game.playerTwo.toString(), 'User:', userAddrStr);
+
+  if (!isPlayerOne && !isPlayerTwo) {
+    console.log('[GameCard] Not a player - canOpenBid = false');
+    return false;
+  }
 
   // Check if this player hasn't opened their bid yet
-  if (props.game.playerOne.toString() === props.userAddress.toString()) {
-    return Number(props.game.playerOneChosenSide) === COIN_SIDE_CLOSED;
+  // COIN_SIDE_CLOSED (1) means bid is not yet revealed
+  if (isPlayerOne) {
+    const playerOneChoice = Number(props.game.playerOneChosenSide);
+    console.log('[GameCard] Player 1 choice:', playerOneChoice, 'CLOSED:', COIN_SIDE_CLOSED, 'canOpenBid:', playerOneChoice === COIN_SIDE_CLOSED);
+    return playerOneChoice === COIN_SIDE_CLOSED;
   }
-  if (props.game.playerTwo.toString() === props.userAddress.toString()) {
-    return Number(props.game.playerTwoChosenSide) === COIN_SIDE_CLOSED;
+  if (isPlayerTwo) {
+    const playerTwoChoice = Number(props.game.playerTwoChosenSide);
+    console.log('[GameCard] Player 2 choice:', playerTwoChoice, 'CLOSED:', COIN_SIDE_CLOSED, 'canOpenBid:', playerTwoChoice === COIN_SIDE_CLOSED);
+    return playerTwoChoice === COIN_SIDE_CLOSED;
   }
 
+  console.log('[GameCard] Fallback - canOpenBid = false');
   return false;
 });
 
