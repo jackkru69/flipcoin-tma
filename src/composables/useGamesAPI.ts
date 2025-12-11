@@ -10,12 +10,12 @@
 import { computed, ref, watch, onUnmounted, type Ref } from 'vue';
 import { useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/vue-query';
 import { Address } from '@ton/core';
-import type { GameListResponse, APIGame } from '../types/api';
+import type { GameListResponse, APIGame, GameWithReservation } from '../types/api';
 import type { GameInfo } from '../types/contract';
 import type { Reservation } from '../types/reservation';
-import { GAME_STATUS_WAITING_FOR_OPPONENT } from '../types/contract';
+import { GAME_STATUS_WAITING_FOR_OPPONENT, GAME_STATUS_ENDED } from '../types/contract';
 import { getWebSocketService } from '../services/websocket';
-import type { WSMessage } from '../types/websocket';
+import type { WSMessage, GameStateUpdateMessage } from '../types/websocket';
 import {
   isGameStateUpdate,
   isReservationCreated,
@@ -208,6 +208,69 @@ export function useGamesAPI(status: Ref<number | null> | number | null = GAME_ST
     reservationUpdates.value.clear();
   }
 
+  // Optimistic update for game join - immediately update UI when transaction is sent
+  function optimisticJoinGame(gameId: number, playerTwoAddress: string): void {
+    const queryClient = useQueryClient();
+
+    queryClient.setQueriesData<GameListResponse>(
+      { queryKey: ['api', 'games'] },
+      (oldData) => {
+        if (!oldData) return oldData;
+
+        const gameIndex = oldData.games.findIndex(gwr => gwr.game.game_id === gameId);
+        if (gameIndex === -1) return oldData;
+
+        const updatedGames = [...oldData.games];
+        const currentGame = updatedGames[gameIndex];
+
+        updatedGames[gameIndex] = {
+          ...currentGame,
+          game: {
+            ...currentGame.game,
+            player_two_address: playerTwoAddress,
+            status: 2, // WAITING_FOR_OPEN_BIDS
+            joined_at: new Date().toISOString(),
+          },
+          reservation: null, // Clear reservation on join
+        };
+
+        return {
+          ...oldData,
+          games: updatedGames,
+        };
+      }
+    );
+
+    console.log('[useGamesAPI] Optimistic join applied for game:', gameId);
+  }
+
+  // Optimistic update for game cancel - remove from waiting games
+  function optimisticCancelGame(gameId: number): void {
+    const queryClient = useQueryClient();
+
+    queryClient.setQueriesData<GameListResponse>(
+      { queryKey: ['api', 'games'] },
+      (oldData) => {
+        if (!oldData) return oldData;
+
+        return {
+          ...oldData,
+          games: oldData.games.filter(gwr => gwr.game.game_id !== gameId),
+          total: Math.max(0, oldData.total - 1),
+        };
+      }
+    );
+
+    console.log('[useGamesAPI] Optimistic cancel applied for game:', gameId);
+  }
+
+  // Rollback optimistic update on error
+  function rollbackOptimisticUpdate(): void {
+    const queryClient = useQueryClient();
+    queryClient.invalidateQueries({ queryKey: ['api', 'games'] });
+    console.log('[useGamesAPI] Rolled back optimistic update');
+  }
+
   return {
     // Queries
     gamesQuery,
@@ -228,6 +291,11 @@ export function useGamesAPI(status: Ref<number | null> | number | null = GAME_ST
     updateReservation,
     clearReservationUpdate,
     clearAllReservationUpdates,
+
+    // Optimistic updates
+    optimisticJoinGame,
+    optimisticCancelGame,
+    rollbackOptimisticUpdate,
 
     // Refetch functions
     refetch: () => {
@@ -259,15 +327,121 @@ export function useGamesAPIWithWebSocket(
   let unsubscribeMessage: (() => void) | null = null;
 
   /**
-   * Handle incoming WebSocket message
+   * Convert WebSocket game data to APIGame format
+   */
+  const wsDataToAPIGame = (wsData: GameStateUpdateMessage['data']): APIGame => {
+    return {
+      game_id: wsData.game_id,
+      status: wsData.status,
+      player_one_address: wsData.player_one_address,
+      player_two_address: wsData.player_two_address,
+      player_one_choice: wsData.player_one_choice,
+      player_two_choice: wsData.player_two_choice,
+      bet_amount: wsData.bet_amount,
+      winner_address: wsData.winner_address,
+      payout_amount: wsData.payout_amount,
+      created_at: wsData.created_at,
+      joined_at: wsData.joined_at,
+      revealed_at: wsData.revealed_at,
+      completed_at: wsData.completed_at,
+      // Default values for fields not in WebSocket message
+      service_fee_numerator: 0,
+      referrer_fee_numerator: 0,
+      waiting_timeout_seconds: 0,
+      lowest_bid_allowed: 0,
+      highest_bid_allowed: 0,
+      fee_receiver_address: '',
+      init_tx_hash: '',
+      cancelled: wsData.status === GAME_STATUS_ENDED && !wsData.winner_address,
+    };
+  };
+
+  /**
+   * Update a specific game in the cache
+   */
+  const updateGameInCache = (gameId: number, updater: (game: GameWithReservation) => GameWithReservation): void => {
+    // Update in all games list queries
+    queryClient.setQueriesData<GameListResponse>(
+      { queryKey: ['api', 'games'] },
+      (oldData) => {
+        if (!oldData) return oldData;
+
+        const gameIndex = oldData.games.findIndex(gwr => gwr.game.game_id === gameId);
+        if (gameIndex === -1) return oldData;
+
+        const updatedGames = [...oldData.games];
+        updatedGames[gameIndex] = updater(updatedGames[gameIndex]);
+
+        return {
+          ...oldData,
+          games: updatedGames,
+        };
+      }
+    );
+  };
+
+  /**
+   * Handle incoming WebSocket message with granular cache updates
    */
   const handleWebSocketMessage = (message: WSMessage): void => {
     if (isGameStateUpdate(message)) {
-      // Game state changed - invalidate queries to refresh data
-      console.log('[useGamesAPIWithWebSocket] Game state update:', message.game_id, 'status:', message.status);
+      const gameId = message.data.game_id;
+      const eventType = message.event_type;
 
-      // Invalidate all games queries to refresh the list
-      queryClient.invalidateQueries({ queryKey: ['api', 'games'] });
+      console.log('[useGamesAPIWithWebSocket] Game state update:', gameId, 'status:', message.data.status, 'event:', eventType);
+
+      // Convert WebSocket data to API game format
+      const updatedGame = wsDataToAPIGame(message.data);
+
+      // Handle different event types
+      switch (eventType) {
+        case 'game_initialized':
+          // New game created - need to refetch to get the new game
+          // Since this game doesn't exist in cache, invalidate to fetch it
+          queryClient.invalidateQueries({ queryKey: ['api', 'games'] });
+          break;
+
+        case 'game_started':
+        case 'secret_opened':
+        case 'game_finished':
+        case 'draw':
+        case 'game_cancelled':
+          // Game state changed - update the specific game in cache
+          updateGameInCache(gameId, (gwr) => ({
+            ...gwr,
+            game: {
+              ...gwr.game,
+              ...updatedGame,
+            },
+          }));
+
+          // For finished/cancelled games, also remove from waiting list if filtered
+          if (eventType === 'game_finished' || eventType === 'draw' || eventType === 'game_cancelled') {
+            // Remove game from cache if current filter is for waiting games
+            queryClient.setQueriesData<GameListResponse>(
+              { queryKey: ['api', 'games', { value: GAME_STATUS_WAITING_FOR_OPPONENT }] },
+              (oldData) => {
+                if (!oldData) return oldData;
+                return {
+                  ...oldData,
+                  games: oldData.games.filter(gwr => gwr.game.game_id !== gameId),
+                  total: oldData.total - 1,
+                };
+              }
+            );
+          }
+          break;
+
+        case 'insufficient_balance':
+          // Just log, no state change needed
+          console.warn('[useGamesAPIWithWebSocket] Insufficient balance for game:', gameId);
+          break;
+
+        default:
+          // Unknown event type or no event type - fallback to invalidation
+          console.log('[useGamesAPIWithWebSocket] Unknown event type, falling back to invalidation');
+          queryClient.invalidateQueries({ queryKey: ['api', 'games'] });
+      }
     } else if (isReservationCreated(message)) {
       // Handle reservation creation
       console.log('[useGamesAPIWithWebSocket] Reservation created for game:', message.game_id);
@@ -286,10 +460,8 @@ export function useGamesAPIWithWebSocket(
 
       gamesApi.updateReservation(message.game_id, null);
 
-      // If reason is 'joined', invalidate queries as the game state changed
-      if (message.reason === 'joined') {
-        queryClient.invalidateQueries({ queryKey: ['api', 'games'] });
-      }
+      // Note: If reason is 'joined', game_state_update with event_type='game_started'
+      // will follow and handle the game state update
     }
   };
 

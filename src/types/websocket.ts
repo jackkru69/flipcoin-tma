@@ -52,10 +52,23 @@ export type WebSocketMessageType =
   | 'error';
 
 /**
+ * Game event types from blockchain - indicates what triggered the update
+ */
+export type GameEventType =
+  | 'game_initialized'
+  | 'game_started'
+  | 'game_finished'
+  | 'game_cancelled'
+  | 'draw'
+  | 'secret_opened'
+  | 'insufficient_balance';
+
+/**
  * Game update message - full game data from backend matching OpenAPI spec
  */
 export interface GameStateUpdateMessage extends WebSocketMessage {
   type: 'game_state_update';
+  event_type?: GameEventType; // Type of blockchain event that triggered this update
   data: {
     game_id: number;
     status: number;
